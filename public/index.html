@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MultiTerminalAI</title>
+    <link rel="stylesheet" href="/vendor/@xterm/xterm/css/xterm.css" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark">MT</div>
+        <div>
+          <h1>MultiTerminalAI</h1>
+          <p>Terminales IA</p>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <button id="newSession" disabled>+ Nuevo chat</button>
+        <button id="newProject">Abrir carpeta</button>
+        <button id="remoteView">Remoto</button>
+      </div>
+
+      <p class="sidebar-label">Proyectos</p>
+      <nav id="projectList" class="project-list"></nav>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div class="title-block">
+          <div class="title-row">
+            <h2 id="sessionName">Nuevo chat</h2>
+            <button id="sessionMenuButton" class="icon-button" disabled>...</button>
+          </div>
+          <p><span id="projectName">Sin proyecto</span> <span id="projectPath">Abre una carpeta para empezar.</span></p>
+        </div>
+        <div class="actions">
+          <button id="connectTerminal" disabled>Iniciar</button>
+          <button id="restartTerminal" disabled>Reiniciar</button>
+          <button id="openNative" disabled>Abrir aparte</button>
+          <button id="clearTerminal">Limpiar</button>
+        </div>
+      </header>
+
+      <section class="terminal-panel">
+        <div id="terminal" class="terminal"></div>
+      </section>
+
+      <section id="remotePanel" class="remote-panel" hidden>
+        <div class="remote-card">
+          <div>
+            <h2>MultiTerminalAI móvil</h2>
+            <p>Conecta tu teléfono por Tailscale, acepta una vez y revoca el acceso cuando quieras.</p>
+          </div>
+          <button id="createPairCode">Crear enlace de emparejamiento</button>
+          <div id="pairCodeBox" class="pair-code-box" hidden></div>
+        </div>
+
+        <div class="remote-grid">
+          <div>
+            <h3>Solicitudes pendientes</h3>
+            <div id="pendingConnections" class="remote-list"></div>
+          </div>
+          <div>
+            <h3>Conexiones autorizadas</h3>
+            <div id="authorizedConnections" class="remote-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div id="actionMenu" class="action-menu" hidden></div>
+
+    <script src="/vendor/@xterm/xterm/lib/xterm.js"></script>
+    <script src="/vendor/@xterm/addon-fit/lib/addon-fit.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

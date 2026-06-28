@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>MultiTerminalAI Remote</title>
+    <link rel="manifest" href="/mobile/manifest.json" />
+    <link rel="stylesheet" href="/vendor/@xterm/xterm/css/xterm.css" />
+    <link rel="stylesheet" href="/mobile/styles.css" />
+  </head>
+  <body>
+    <main id="pairView" class="screen pair-screen" hidden>
+      <h1>Conectar teléfono</h1>
+      <p>Usa Tailscale y acepta la solicitud desde el ordenador.</p>
+      <label>
+        Nombre del teléfono
+        <input id="deviceName" autocomplete="name" />
+      </label>
+      <label>
+        Código
+        <input id="pairCode" autocomplete="one-time-code" />
+      </label>
+      <button id="pairButton">Solicitar acceso</button>
+      <p id="pairStatus" class="status"></p>
+    </main>
+
+    <main id="homeView" class="screen home-screen" hidden>
+      <header class="mobile-header">
+        <button id="backButton" class="round">‹</button>
+        <h1>Remote</h1>
+        <button id="moreButton" class="round">...</button>
+      </header>
+
+      <section class="computer-line">
+        <span class="online-dot"></span>
+        <span class="computer-icon">▱</span>
+        <strong id="computerName">PC</strong>
+      </section>
+
+      <section>
+        <h2>Projects</h2>
+        <button id="chatsButton" class="project-row">▤ <span>Chats</span></button>
+        <div id="projectList"></div>
+      </section>
+
+      <section>
+        <h2>Recents</h2>
+        <div id="recentList"></div>
+      </section>
+
+      <footer class="bottom-bar">
+        <label class="search-box">
+          <span>⌕</span>
+          <input id="searchInput" placeholder="Search chats" />
+        </label>
+        <button id="chatButton" class="chat-button">✎ Chat</button>
+      </footer>
+    </main>
+
+    <main id="terminalView" class="screen terminal-screen" hidden>
+      <header class="mobile-header">
+        <button id="terminalBack" class="round">‹</button>
+        <div>
+          <h1 id="terminalTitle">Chat</h1>
+          <p id="terminalSubtitle"></p>
+        </div>
+        <button id="terminalRestart" class="round">↻</button>
+      </header>
+      <div id="mobileTerminal" class="mobile-terminal"></div>
+      <form id="commandForm" class="command-bar">
+        <input id="commandInput" autocomplete="off" spellcheck="false" placeholder="Escribe un comando" />
+        <button>Enviar</button>
+      </form>
+    </main>
+
+    <script src="/vendor/@xterm/xterm/lib/xterm.js"></script>
+    <script src="/vendor/@xterm/addon-fit/lib/addon-fit.js"></script>
+    <script src="/mobile/app.js"></script>
+  </body>
+</html>

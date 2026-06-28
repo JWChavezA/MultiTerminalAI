@@ -1,0 +1,13 @@
+node_modules/
+dist/
+data/
+.appdata/
+.tmp-*/
+.tmp-*/
+.codex-remote-attachments/
+android-mobile/build/
+*.keystore
+*.jks
+*.apk
+*.idsig
+*.log

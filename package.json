@@ -1,0 +1,61 @@
+{
+  "name": "multi-terminal-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local project and terminal session organizer for AI CLIs.",
+  "type": "module",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:web": "node server.js",
+    "desktop": "electron .",
+    "e2e": "node e2e/ws-fragment-smoke.mjs && node e2e/mobile-remote-smoke.mjs && node e2e/cdp-smoke.mjs",
+    "build:apk": "powershell.exe -ExecutionPolicy Bypass -File ./android-mobile/build-apk.ps1",
+    "pack:win": "electron-builder --win nsis portable",
+    "pack:linux": "electron-builder --linux AppImage deb",
+    "pack": "electron-builder"
+  },
+  "build": {
+    "appId": "com.local.multiterminalai",
+    "productName": "MultiTerminalAI",
+    "files": [
+      "electron-main.js",
+      "server.js",
+      "public/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/node-pty/**/*"
+    ],
+    "npmRebuild": false,
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development"
+    }
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "node-pty": "^1.1.0",
+    "qrcode": "^1.5.4"
+  }
+}

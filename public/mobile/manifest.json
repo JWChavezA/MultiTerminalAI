@@ -1,0 +1,10 @@
+{
+  "name": "MultiTerminalAI Remote",
+  "short_name": "MTAI Remote",
+  "start_url": "/mobile/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "scope": "/mobile/"
+}

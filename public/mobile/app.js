@@ -347,7 +347,8 @@ function showConnectionsManager() {
       card.addEventListener("click", (e) => {
         if (e.target.closest(".conn-icon-btn")) return;
         const id = card.dataset.id;
-        if (id !== NativeBridge.getActiveId()) NativeBridge.setActive(id);
+        // Siempre cargar la conexion al tocar la card (sea activa o no)
+        NativeBridge.setActive(id);
       });
     });
     list.querySelectorAll(".conn-icon-btn").forEach((btn) => {

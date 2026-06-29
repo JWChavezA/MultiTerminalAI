@@ -30,21 +30,21 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Edge-to-edge: la app pinta debajo de la status bar y la navigation bar.
-        // El CSS del WebView usa env(safe-area-inset-*) para evitar las areas del sistema.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller != null) {
-                controller.setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
-            }
-        }
-        getWindow().setStatusBarColor(Color.TRANSPARENT);
-        getWindow().setNavigationBarColor(Color.TRANSPARENT);
-        // Permitir dibujar debajo de las barras del sistema
-        getWindow().setDecorFitsSystemWindows(false);
 
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         setupWebView();
+
+        // Edge-to-edge: ahora setContentView ya fue llamado en setupWebView(),
+        // getWindow() tiene un DecorView valido.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                getWindow().setStatusBarColor(Color.TRANSPARENT);
+                getWindow().setNavigationBarColor(Color.TRANSPARENT);
+                getWindow().setDecorFitsSystemWindows(false);
+            } catch (Exception ignored) {
+                // Si fallara en algun dispositivo, no rompemos la app
+            }
+        }
 
         String savedUrl = prefs.getString(KEY_URL, "");
         if (savedUrl.isEmpty()) {

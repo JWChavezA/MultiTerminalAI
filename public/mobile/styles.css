@@ -216,6 +216,67 @@ section {
   height: 100%;
 }
 
+.terminal-menu {
+  position: fixed;
+  top: 64px;
+  right: 12px;
+  left: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 200;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  min-width: 220px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.terminal-menu button {
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.terminal-menu button:active {
+  background: rgba(255,255,255,0.08);
+}
+
+.terminal-screen.no-header .mobile-header {
+  display: none;
+}
+
+.terminal-screen.no-header .mobile-terminal {
+  top: 0;
+}
+
+.copy-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  z-index: 100;
+  animation: fadeOut 1.5s ease-in-out forwards;
+}
+
+@keyframes fadeOut {
+  0%, 60% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .key-bar {
   display: grid;
   grid-template-columns: repeat(8, 1fr);

@@ -58,14 +58,24 @@
     </main>
 
     <main id="terminalView" class="screen terminal-screen" hidden>
-      <header class="mobile-header">
-        <button id="terminalBack" class="round">‹</button>
+      <header class="mobile-header" id="terminalHeader">
+        <button id="terminalBack" class="round" title="Volver">‹</button>
         <div>
           <h1 id="terminalTitle">Chat</h1>
           <p id="terminalSubtitle"></p>
         </div>
-        <button id="terminalRestart" class="round">↻</button>
+        <button id="terminalPaste" class="round" title="Pegar portapapeles">⎘</button>
+        <button id="terminalMore" class="round" title="Mas opciones">…</button>
       </header>
+      <div id="terminalMenu" class="terminal-menu" hidden>
+        <button type="button" data-action="restart" title="Reiniciar sesion">↻ Reiniciar</button>
+        <button type="button" data-action="disconnect" title="Cerrar WebSocket (no mata el PTY)">⎋ Desconectar</button>
+        <button type="button" data-action="close" title="Cerrar sesion y volver al inicio">✕ Cerrar sesion</button>
+        <button type="button" data-action="autohide" id="autohideToggle" title="Ocultar/mostrar barra">↕ Ocultar barra</button>
+        <button type="button" data-action="urlscan" title="Buscar URLs en la terminal">🔗 Escanear URLs</button>
+        <button type="button" data-action="copySelection" title="Copiar texto seleccionado">⎘ Copiar seleccion</button>
+        <button type="button" data-action="paste" title="Pegar desde portapapeles">⎗ Pegar</button>
+      </div>
       <div id="mobileTerminal" class="mobile-terminal"></div>
       <div id="keyBar" class="key-bar" aria-label="Teclas rapidas">
         <button type="button" class="key toggle" id="ctrlKey" title="Ctrl (siguiente tecla = Ctrl+key)">Ctrl</button>

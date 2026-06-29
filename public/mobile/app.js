@@ -171,7 +171,11 @@ $("#terminalBack").addEventListener("click", () => {
   mobileState.socket?.close();
   show("home");
 });
-$("#terminalRestart").addEventListener("click", () => connectTerminal(mobileState.selectedProjectId, mobileState.selectedSessionId));
+// terminalRestart fue removido del HTML; el menu "..." ahora tiene la opcion "Reiniciar"
+const terminalRestartEl = $("#terminalRestart");
+if (terminalRestartEl) {
+  terminalRestartEl.addEventListener("click", () => connectTerminal(mobileState.selectedProjectId, mobileState.selectedSessionId));
+}
 $("#commandForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const value = $("#commandInput").value;
@@ -266,3 +270,158 @@ loadHome().catch(() => show("pair"));
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/mobile/sw.js").catch(() => {});
 }
+
+// === Menu de sesion (ConnectBot style) ===
+const terminalMenu = $("#terminalMenu");
+const terminalMore = $("#terminalMore");
+if (terminalMore && terminalMenu) {
+  terminalMore.addEventListener("click", (event) => {
+    event.stopPropagation();
+    terminalMenu.hidden = !terminalMenu.hidden;
+  });
+  // Cerrar menu al tap fuera
+  document.addEventListener("click", (event) => {
+    if (terminalMenu.hidden) return;
+    if (terminalMenu.contains(event.target)) return;
+    if (terminalMore.contains(event.target)) return;
+    terminalMenu.hidden = true;
+  });
+}
+
+const terminalScreen = $("#terminalView");
+const terminalHeader = $("#terminalHeader");
+let autoHide = false;
+
+function showToast(message) {
+  const existing = document.querySelector(".copy-toast");
+  if (existing) existing.remove();
+  const div = document.createElement("div");
+  div.className = "copy-toast";
+  div.textContent = message;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 1600);
+}
+
+async function copyToClipboard(text) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {}
+  // Fallback: text area
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch {}
+  ta.remove();
+  return ok;
+}
+
+async function readClipboard() {
+  // Intentar clipboard API primero
+  try {
+    if (navigator.clipboard?.readText) {
+      const text = await navigator.clipboard.readText();
+      if (text) return text;
+    }
+  } catch {}
+  // Fallback: pegar el contenido de un textarea temporal.
+  // Esto NO funciona sin interaccion del usuario en la mayoria de navegadores,
+  // pero al menos muestra el flujo completo si se copia/pega manualmente.
+  return "";
+}
+
+// Handlers del menu
+if (terminalMenu) {
+  terminalMenu.addEventListener("click", async (event) => {
+    const btn = event.target.closest("[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    terminalMenu.hidden = true;
+
+    const sel = mobileState.terminal?.getSelection?.() || "";
+
+    switch (action) {
+      case "restart":
+        connectTerminal(mobileState.selectedProjectId, mobileState.selectedSessionId);
+        break;
+      case "disconnect":
+        // Solo cierra el WebSocket; el PTY sigue vivo en el desktop
+        mobileState.socket?.close();
+        showToast("Desconectado. PTY sigue vivo.");
+        show("home");
+        break;
+      case "close":
+        // Cierra WebSocket y vuelve al inicio (mismo comportamiento que el back button)
+        mobileState.socket?.close();
+        show("home");
+        break;
+      case "autohide":
+        autoHide = !autoHide;
+        if (terminalScreen) terminalScreen.classList.toggle("no-header", autoHide);
+        btn.textContent = autoHide ? "↕ Mostrar barra" : "↕ Ocultar barra";
+        setTimeout(() => fitTerminal(), 50);
+        break;
+      case "urlscan": {
+        // Lee el buffer del terminal (ultimas lineas pintadas) y busca URLs
+        const buf = mobileState.terminal?.buffer?.active;
+        const lines = [];
+        if (buf) {
+          for (let i = 0; i < buf.length; i++) {
+            const line = buf.getLine(i);
+            if (line) lines.push(line.translateToString(true));
+          }
+        }
+        const text = lines.join("\n");
+        const urlRe = /https?:\/\/[^\s)]+/g;
+        const urls = Array.from(new Set(text.match(urlRe) || []));
+        if (urls.length === 0) {
+          showToast("No se encontraron URLs");
+        } else {
+          // Abrir la primera (o mostrar lista). Simplificamos: abrir primera.
+          window.open(urls[0], "_blank", "noopener");
+          showToast(`Abriendo ${urls[0]} (${urls.length} encontradas)`);
+        }
+        break;
+      }
+      case "copySelection":
+        if (!sel) {
+          showToast("Nada seleccionado (long-press en el terminal)");
+          break;
+        }
+        if (await copyToClipboard(sel)) showToast(`Copiado: ${sel.length} chars`);
+        else showToast("Error al copiar");
+        break;
+      case "paste": {
+        const text = await readClipboard();
+        if (!text) {
+          showToast("Portapapeles vacio");
+          break;
+        }
+        sendSocketData(text);
+        showToast(`Pegado: ${text.length} chars`);
+        break;
+      }
+    }
+  });
+}
+
+// Boton Paste en la top bar
+const terminalPaste = $("#terminalPaste");
+if (terminalPaste) {
+  terminalPaste.addEventListener("click", async () => {
+    const text = await readClipboard();
+    if (!text) { showToast("Portapapeles vacio"); return; }
+    sendSocketData(text);
+    showToast(`Pegado: ${text.length} chars`);
+  });
+}
+
+// Long press en el terminal: xterm.js ya hace seleccion built-in (tambien la toolbar de copy en iOS/Android).
+// En Android WebView, long-press muestra el menu contextual del sistema (Select text). Eso es suficiente.
+// Ademas, xterm expone un boton de "copy" cuando hay seleccion en algunos addons; nosotros usamos terminal.getSelection().

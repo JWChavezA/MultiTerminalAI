@@ -47,29 +47,28 @@ public class MainActivity extends Activity {
             } catch (Exception ignored) {}
         }
 
-        // Si no hay conexiones guardadas, mostrar dialogo de agregar
-        // Si hay, ir directo al gestor de conexiones (que la PWA controla via bridge)
-        if (countConnections() == 0) {
-            showAddConnectionDialog(null);
+        // Siempre ir al administrador de conexiones (la PWA muestra el gestor HTML)
+        // Si el usuario quiere conectar a una, toca la card y el WebView navega alla
+        String activeId = prefs.getString(KEY_ACTIVE_ID, null);
+        String activeUrl = activeId != null ? getUrlForId(activeId) : null;
+        if (activeUrl == null && countConnections() > 0) {
+            // Hay conexiones pero sin activa, elegir la primera
+            try {
+                JSONArray arr = new JSONArray(prefs.getString(KEY_CONNECTIONS, "[]"));
+                if (arr.length() > 0) {
+                    activeId = arr.getJSONObject(0).getString("id");
+                    prefs.edit().putString(KEY_ACTIVE_ID, activeId).apply();
+                    activeUrl = arr.getJSONObject(0).getString("url");
+                }
+            } catch (JSONException e) {}
+        }
+        // Cargar el gestor con la conexion activa como parametro (para resaltarla)
+        if (activeUrl != null) {
+            String sep = activeUrl.contains("?") ? "&" : "?";
+            loadRemote(activeUrl + sep + "show=connections&active=" + activeId);
         } else {
-            String activeId = prefs.getString(KEY_ACTIVE_ID, null);
-            if (activeId == null) {
-                // No active, pick first
-                try {
-                    JSONArray arr = new JSONArray(prefs.getString(KEY_CONNECTIONS, "[]"));
-                    if (arr.length() > 0) {
-                        activeId = arr.getJSONObject(0).getString("id");
-                        prefs.edit().putString(KEY_ACTIVE_ID, activeId).apply();
-                    }
-                } catch (JSONException e) {}
-            }
-            if (activeId != null) {
-                String url = getUrlForId(activeId);
-                if (url != null) loadRemote(url);
-                else showAddConnectionDialog(null);
-            } else {
-                showAddConnectionDialog(null);
-            }
+            // No hay conexiones, mostrar gestor vacio
+            showConnectionsScreen();
         }
     }
 
@@ -245,18 +244,71 @@ public class MainActivity extends Activity {
     }
 
     public void showConnectionsScreen() {
-        // Load a special page in the PWA that shows the connection manager
+        // Si hay conexiones, cargar la PWA con parametro gestor
+        // Si no hay, mostrar el gestor HTML inline (no dialog nativo) con empty state
         String activeId = prefs.getString(KEY_ACTIVE_ID, null);
         String url = getUrlForId(activeId);
         if (url == null) {
-            // No hay activa, mostrar dialogo
-            showAddConnectionDialog(null);
+            showConnectionsEmptyState();
             return;
         }
-        // Cargar la PWA con un parametro que indica "mostrar gestor"
         String sep = url.contains("?") ? "&" : "?";
         String target = url + sep + "show=connections";
         loadRemote(target);
+    }
+
+    private void showConnectionsEmptyState() {
+        // Cargar HTML inline con el gestor en empty state.
+        // El boton Agregar llama a NativeBridge.addNew() (bridge existente).
+        String html =
+            "<!DOCTYPE html>" +
+            "<html lang='es'>" +
+            "<head>" +
+            "<meta charset='utf-8'>" +
+            "<meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'>" +
+            "<meta name='theme-color' content='#06070d'>" +
+            "<title>Conexiones - MultiTerminalAI Remote</title>" +
+            "<style>" +
+            ":root{color-scheme:dark;--bg:#06070d;--bg-grad:radial-gradient(ellipse 600px 400px at 80% -5%,rgba(34,211,238,.12),transparent 55%),radial-gradient(ellipse 500px 350px at -10% 5%,rgba(48,207,145,.10),transparent 55%),radial-gradient(ellipse 400px 300px at 50% 110%,rgba(160,85,247,.08),transparent 55%),linear-gradient(180deg,#070b16 0%,#06070d 40%,#04050a 100%);--text:#eef4ff;--muted:#8b9bb4;--panel:rgba(18,26,44,.72);--line:rgba(36,53,79,.5);--cyan:#22d3ee;--green:#3ccf91;--radius:18px}" +
+            "*{box-sizing:border-box;margin:0;padding:0}" +
+            "html,body{height:100%;overflow:hidden;font:16px/1.4 -apple-system,system-ui,sans-serif;color:var(--text);background:var(--bg-grad);background-attachment:fixed}" +
+            ".screen{height:100dvh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px env(safe-area-inset-left) env(safe-area-inset-right)}" +
+            ".screen[hidden]{display:none}" +
+            ".mobile-header{padding:max(12px,env(safe-area-inset-top)) 0 12px;display:flex;align-items:center}" +
+            ".mobile-header h1{font-size:18px;font-weight:700;flex:1;text-align:center}" +
+            ".conn-header{padding:0 4px 16px;border-bottom:1px solid var(--line);margin-bottom:16px}" +
+            ".conn-header p{color:var(--muted);font-size:14px}" +
+            ".conn-list{display:flex;flex-direction:column;gap:8px;flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch}" +
+            ".conn-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center;color:var(--muted);gap:8px;flex:1}" +
+            ".conn-empty-icon{width:80px;height:80px;display:grid;place-items:center;border-radius:24px;background:linear-gradient(135deg,rgba(34,211,238,.15),rgba(160,85,247,.1));margin-bottom:8px}" +
+            ".conn-empty-icon svg{width:40px;height:40px;color:var(--cyan)}" +
+            ".conn-empty h3{font-size:22px;font-weight:800;background:linear-gradient(135deg,var(--cyan),var(--green));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}" +
+            ".conn-empty p{max-width:280px;font-size:14px;line-height:1.5;color:var(--muted)}" +
+            ".conn-add-button{display:flex;align-items:center;justify-content:center;gap:8px;height:54px;border:1.5px dashed var(--line);border-radius:16px;background:transparent;color:var(--cyan);font-size:15px;font-weight:700;cursor:pointer;margin-top:12px;transition:all .15s ease;-webkit-tap-highlight-color:transparent;font-family:inherit}" +
+            ".conn-add-button:active{background:rgba(34,211,238,.08);border-color:var(--cyan)}" +
+            ".conn-add-button svg{width:18px;height:18px}" +
+            "</style>" +
+            "</head>" +
+            "<body>" +
+            "<main id='connectionsView' class='screen connections-screen'>" +
+            "<header class='mobile-header'><h1>Conexiones</h1></header>" +
+            "<div class='conn-header'><p>Tus servidores MultiTerminalAI. Toca uno para conectar.</p></div>" +
+            "<div id='connList' class='conn-list'>" +
+            "<div class='conn-empty'>" +
+            "<div class='conn-empty-icon'>" +
+            "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5'>" +
+            "<rect x='2' y='3' width='20' height='14' rx='2'/><path d='M8 21h8M12 17v4'/>" +
+            "</svg></div>" +
+            "<h3>Bienvenido</h3>" +
+            "<p>Conectate a tus servidores MultiTerminalAI para empezar a controlar sesiones de terminal desde tu telefono.</p>" +
+            "</div></div>" +
+            "<button id='connAddButton' class='conn-add-button' onclick='NativeBridge.addNew()'>" +
+            "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'><path d='M12 5v14M5 12h14'/></svg>" +
+            " Agregar conexion" +
+            "</button>" +
+            "</main>" +
+            "</body></html>";
+        webView.loadDataWithBaseURL("http://localhost", html, "text/html", "utf-8", null);
     }
 
     // === Dialog de error de conexion ===

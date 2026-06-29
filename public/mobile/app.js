@@ -296,7 +296,13 @@ function showConnectionsManager() {
     const activeId = NativeBridge.getActiveId();
 
     if (conns.length === 0) {
-      list.innerHTML = `<div class="conn-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><p>No tienes conexiones guardadas</p><span>Agrega una para empezar</span></div>`;
+      list.innerHTML = `<div class="conn-empty">
+        <div class="conn-empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <h3>Bienvenido</h3>
+        <p>Conectate a tus servidores MultiTerminalAI para empezar a controlar sesiones de terminal desde tu telefono.</p>
+      </div>`;
       return;
     }
 

@@ -392,13 +392,22 @@ public class MainActivity extends Activity {
             "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'><path d='M12 5v14M5 12h14'/></svg>" +
             " Agregar conexion" +
             "</button>" +
-            "<button class='conn-scan-button' onclick='NativeBridge.scanQR()'>" +
+            "<button class='conn-scan-button' id='emptyStateScanBtn'>" +
             "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><rect x='3' y='3' width='7' height='7' rx='1'/><rect x='14' y='3' width='7' height='7' rx='1'/><rect x='3' y='14' width='7' height='7' rx='1'/><path d='M14 14h3M14 17h7M17 14v3M20 17v4'/></svg>" +
             " Escanear QR" +
             "</button>" +
             "</main>" +
             "</body></html>";
         webView.loadDataWithBaseURL("http://localhost", html, "text/html", "utf-8", null);
+        // Despues de cargar, agregar handler al boton de escanear
+        webView.postDelayed(() -> {
+            webView.evaluateJavascript(
+                "document.getElementById('emptyStateScanBtn')?.addEventListener('click', function() { " +
+                "  if (typeof NativeBridge !== 'undefined' && NativeBridge.startCamera) { " +
+                "    NativeBridge.startCamera(); " +
+                "  } " +
+                "});", null);
+        }, 100);
     }
 
     // === Dialog de error de conexion ===
@@ -524,13 +533,13 @@ public class MainActivity extends Activity {
                 }
             })
             .setNegativeButton("Cancelar", (dialog, which) -> {
+                // Si ya hay conexiones, ir al gestor; si no, quedarse en el empty state
                 if (countConnections() > 0) {
-                    // Volver al gestor
                     showConnectionsScreen();
-                } else {
-                    finish();
                 }
+                // No llamamos finish() en el caso empty state para no cerrar la app
             })
+            .setCancelable(true)
             .show();
     }
 
@@ -593,6 +602,46 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        if (requestCode == 2002) {
+            // Resultado de la camara (ACTION_IMAGE_CAPTURE)
+            if (resultCode == RESULT_OK && data != null) {
+                try {
+                    android.graphics.Bitmap photo = (android.graphics.Bitmap) data.getExtras().get("data");
+                    if (photo != null) {
+                        // Convertir a base64 data URL
+                        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+                        photo.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, baos);
+                        String b64 = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP);
+                        String dataUrl = "data:image/jpeg;base64," + b64;
+                        // Pasar al JS via evaluateJavascript
+                        String js = "(async () => { " +
+                            "const img = new Image(); " +
+                            "img.onload = () => { " +
+                            "  const canvas = document.createElement('canvas'); " +
+                            "  const ctx = canvas.getContext('2d'); " +
+                            "  canvas.width = img.width; " +
+                            "  canvas.height = img.height; " +
+                            "  ctx.drawImage(img, 0, 0); " +
+                            "  const data = ctx.getImageData(0, 0, canvas.width, canvas.height); " +
+                            "  if (typeof jsQR !== 'undefined') { " +
+                            "    const code = jsQR(data.data, data.width, data.height, { inversionAttempts: 'attemptBoth' }); " +
+                            "    if (code && code.data) { " +
+                            "      handleQRResult(code.data); " +
+                            "    } else { " +
+                            "      alert('No se detecto QR en la imagen'); " +
+                            "    } " +
+                            "  } " +
+                            "}; " +
+                            "img.src = '" + dataUrl + "'; " +
+                            "})();";
+                        webView.evaluateJavascript(js, null);
+                    }
+                } catch (Exception e) {
+                    // Silenciar
+                }
+            }
+            return;
+        }
         if (requestCode == 1001 && mFilePathCallback != null) {
             Uri[] results = null;
             if (resultCode == RESULT_OK && data != null && data.getData() != null) {
@@ -674,6 +723,24 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void addConnection(String url) {
             activity.addOrUpdateConnection(null, null, url);
+        }
+
+        @JavascriptInterface
+        public void startCamera() {
+            // Abrir camara directamente con Intent
+            activity.runOnUiThread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        android.content.Intent camIntent = new android.content.Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+                        activity.startActivityForResult(camIntent, 2002);
+                    } catch (Exception e) {
+                        // Si no hay camara, abrir galeria
+                        android.content.Intent galIntent = new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
+                        galIntent.setType("image/*");
+                        activity.startActivityForResult(android.content.Intent.createChooser(galIntent, "Elegir imagen"), 1001);
+                    }
+                }
+            });
         }
 
         @JavascriptInterface

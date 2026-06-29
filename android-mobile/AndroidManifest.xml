@@ -1,8 +1,8 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.local.multiterminalai"
-    android:versionCode="17"
-    android:versionName="0.4.2">
+    android:versionCode="18"
+    android:versionName="0.4.3">
     <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="35" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />

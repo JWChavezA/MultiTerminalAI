@@ -113,16 +113,24 @@ public class MainActivity extends Activity {
             public void onPermissionRequest(android.webkit.PermissionRequest request) {
                 request.grant(request.getResources());
             }
-            private android.webkit.ValueCallback<Uri[]> mFilePathCallback;
             @Override
             public boolean onShowFileChooser(WebView webView,
                     android.webkit.ValueCallback<Uri[]> filePathCallback,
                     FileChooserParams fileChooserParams) {
                 mFilePathCallback = filePathCallback;
                 try {
+                    // Usar el Intent que el WebView crea a partir de <input capture=environment>
+                    // Esto respetael atributo capture y abrira la camara directamente
                     android.content.Intent intent = fileChooserParams.createIntent();
-                    startActivityForResult(intent, 1001);
-                } catch (android.content.ActivityNotFoundException e) {
+                    // Forzar que sea capture (no gallery)
+                    String[] acceptTypes = fileChooserParams.getAcceptTypes();
+                    intent.setType("image/*");
+                    // Crear chooser con camara como opcion principal
+                    android.content.Intent camIntent = new android.content.Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+                    android.content.Intent chooser = android.content.Intent.createChooser(intent, "Capturar QR");
+                    chooser.putExtra(android.content.Intent.EXTRA_INITIAL_INTENTS, new android.content.Intent[]{camIntent});
+                    startActivityForResult(chooser, 1001);
+                } catch (Exception e) {
                     mFilePathCallback = null;
                     return false;
                 }

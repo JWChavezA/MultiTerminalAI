@@ -370,6 +370,9 @@ public class MainActivity extends Activity {
             ".conn-add-button{display:flex;align-items:center;justify-content:center;gap:8px;height:54px;border:1.5px dashed var(--line);border-radius:16px;background:transparent;color:var(--cyan);font-size:15px;font-weight:700;cursor:pointer;margin-top:12px;transition:all .15s ease;-webkit-tap-highlight-color:transparent;font-family:inherit}" +
             ".conn-add-button:active{background:rgba(34,211,238,.08);border-color:var(--cyan)}" +
             ".conn-add-button svg{width:18px;height:18px}" +
+            ".conn-scan-button{display:flex;align-items:center;justify-content:center;gap:8px;height:54px;border:0;border-radius:16px;background:linear-gradient(135deg,rgba(34,211,238,.15),rgba(160,85,247,.1));color:#22d3ee;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;-webkit-tap-highlight-color:transparent}" +
+            ".conn-scan-button:active{transform:scale(.97)}" +
+            ".conn-scan-button svg{width:20px;height:20px}" +
             "</style>" +
             "</head>" +
             "<body>" +

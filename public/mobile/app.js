@@ -362,7 +362,10 @@ function showConnectionsManager() {
   }
 
   $("#connAddButton")?.addEventListener("click", () => NativeBridge.addNew());
-  $("#connScanButton")?.addEventListener("click", startQRScanner);
+  // Usar event delegation para que funcione incluso despues de re-render
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("#connScanButton")) startQRScanner();
+  });
   show("connections");
   render();
 }

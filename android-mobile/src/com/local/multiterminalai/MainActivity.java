@@ -10,6 +10,7 @@ import android.view.Gravity;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.WebChromeClient;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -118,23 +119,14 @@ public class MainActivity extends Activity {
                     android.webkit.ValueCallback<Uri[]> filePathCallback,
                     FileChooserParams fileChooserParams) {
                 mFilePathCallback = filePathCallback;
-                try {
-                    // Usar el Intent que el WebView crea a partir de <input capture=environment>
-                    // Esto respetael atributo capture y abrira la camara directamente
-                    android.content.Intent intent = fileChooserParams.createIntent();
-                    // Forzar que sea capture (no gallery)
-                    String[] acceptTypes = fileChooserParams.getAcceptTypes();
-                    intent.setType("image/*");
-                    // Crear chooser con camara como opcion principal
-                    android.content.Intent camIntent = new android.content.Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-                    android.content.Intent chooser = android.content.Intent.createChooser(intent, "Capturar QR");
-                    chooser.putExtra(android.content.Intent.EXTRA_INITIAL_INTENTS, new android.content.Intent[]{camIntent});
-                    startActivityForResult(chooser, 1001);
-                } catch (Exception e) {
-                    mFilePathCallback = null;
-                    return false;
+                // Verificar permiso de camara
+                if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                    // Pedir permiso. El resultado se procesa en onRequestPermissionsResult
+                    pendingFileChooser = filePathCallback;
+                    requestPermissions(new String[]{android.Manifest.permission.CAMERA}, 2001);
+                    return true;
                 }
-                return true;
+                return openCameraChooser();
             }
         });
         // Bridge: la PWA pide informacion y le decimos que hacer
@@ -552,6 +544,49 @@ public class MainActivity extends Activity {
     }
 
     private android.webkit.ValueCallback<Uri[]> mFilePathCallback;
+    private android.webkit.ValueCallback<Uri[]> pendingFileChooser;
+
+    private boolean openCameraChooser() {
+        try {
+            android.content.Intent galIntent = new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
+            galIntent.setType("image/*");
+            android.content.Intent camIntent = new android.content.Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+            android.content.Intent chooser = android.content.Intent.createChooser(galIntent, "Capturar QR");
+            chooser.putExtra(android.content.Intent.EXTRA_INITIAL_INTENTS, new android.content.Intent[]{camIntent});
+            startActivityForResult(chooser, 1001);
+        } catch (Exception e) {
+            if (mFilePathCallback != null) {
+                mFilePathCallback.onReceiveValue(null);
+                mFilePathCallback = null;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == 2001) {
+            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            if (granted && pendingFileChooser != null) {
+                mFilePathCallback = pendingFileChooser;
+                pendingFileChooser = null;
+                openCameraChooser();
+            } else if (pendingFileChooser != null) {
+                // Permiso denegado: sin camara, solo galeria
+                mFilePathCallback = pendingFileChooser;
+                pendingFileChooser = null;
+                try {
+                    android.content.Intent galIntent = new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
+                    galIntent.setType("image/*");
+                    startActivityForResult(android.content.Intent.createChooser(galIntent, "Elegir imagen"), 1001);
+                } catch (Exception e) {
+                    mFilePathCallback.onReceiveValue(null);
+                    mFilePathCallback = null;
+                }
+            }
+        }
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {

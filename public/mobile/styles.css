@@ -952,13 +952,6 @@ button, .round, .key, .list-row, .project-row, .recent-row {
 .new-chat-row:active { background: rgba(34,211,238,.06); }
 .new-chat-row svg { width: 16px; height: 16px; flex: 0 0 auto; }
 
-/* ========== KEY BAR ADAPTIVE ========== */
-.key-bar {
-  position: sticky;
-  bottom: 0;
-  transition: bottom .15s ease;
-}
-
 /* Remove old bottom-bar, search, etc */
 .bottom-bar, .search-box, .chat-button { display: none !important; }
 .list-section { display: none !important; }

@@ -136,26 +136,47 @@ function fitTerminal() {
   }
 }
 
-// Key bar se adapta: si el teclado esta visible se queda encima; si no, al fondo
+// Key bar se adapta al teclado: fixed encima del IME en todo momento.
 function adjustKeyBar() {
   const keyBar = $("#keyBar");
   if (!keyBar) return;
-  // Usar visualViewport para detectar teclado
+  // Forzar position fixed siempre (así no se mueve al hacer scroll)
+  keyBar.style.position = "fixed";
+  keyBar.style.left = "0";
+  keyBar.style.right = "0";
   if (window.visualViewport) {
     const kbHeight = window.innerHeight - window.visualViewport.height;
     if (kbHeight > 100) {
-      keyBar.style.position = "fixed";
+      // Teclado visible: pegar al borde superior del teclado
       keyBar.style.bottom = kbHeight + "px";
     } else {
-      keyBar.style.position = "";
-      keyBar.style.bottom = "";
+      // Teclado oculto: pegar al fondo
+      keyBar.style.bottom = "0px";
     }
+  } else {
+    keyBar.style.bottom = "0px";
+  }
+  // Ajustar padding del xterm para que el scroll no se esconda bajo la key bar
+  const terminal = $(".mobile-terminal");
+  if (terminal) {
+    const keyBarHeight = keyBar.offsetHeight || 0;
+    const kbHeight = window.visualViewport ? (window.innerHeight - window.visualViewport.height) : 0;
+    const bottomInset = keyBarHeight + kbHeight;
+    terminal.style.paddingBottom = bottomInset + "px";
+  }
+  // Re-fit del xterm para que use el nuevo espacio
+  if (mobileState.fitAddon && mobileState.terminal) {
+    setTimeout(() => mobileState.fitAddon.fit(), 30);
   }
 }
 
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", adjustKeyBar);
+  window.visualViewport.addEventListener("scroll", adjustKeyBar);
 }
+window.addEventListener("scroll", adjustKeyBar);
+window.addEventListener("resize", adjustKeyBar);
+setTimeout(adjustKeyBar, 100);
 
 function connectTerminal(projectId, sessionId) {
   const project = mobileState.projects.find((item) => item.id === projectId);

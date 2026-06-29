@@ -107,7 +107,14 @@ public class MainActivity extends Activity {
                     null);
             }
         });
-        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onPermissionRequest(android.webkit.PermissionRequest request) {
+                // Conceder todos los permisos solicitados (camara, etc)
+                // Solo se piden permisos que ya estan en el AndroidManifest
+                request.grant(request.getResources());
+            }
+        });
         // Bridge: la PWA pide informacion y le decimos que hacer
         webView.addJavascriptInterface(new NativeBridge(this), "NativeBridge");
         setContentView(webView);

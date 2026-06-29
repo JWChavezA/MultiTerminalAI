@@ -373,22 +373,44 @@ let qrScanning = false;
 $("#qrCloseButton")?.addEventListener("click", stopQRScanner);
 
 async function startQRScanner() {
-  const scanner = $("#qrScanner");
-  const video = $("#qrVideo");
-  const status = $("#qrStatus");
-  if (!scanner || !video) return;
-  scanner.hidden = false;
-  status.textContent = "Apunta al QR del escritorio";
-  status.className = "qr-status";
-  try {
-    qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-    video.srcObject = qrStream;
-    qrScanning = true;
-    scanQRLoop();
-  } catch (err) {
-    status.textContent = "Camara: " + err.message;
-    status.className = "qr-status error";
-  }
+  // Usar input file con capture=environment para abrir la camara nativa de Android
+  // Esto funciona en WebView sin necesidad de HTTPS (a diferencia de getUserMedia)
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.capture = "environment";
+  input.style.display = "none";
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        if (typeof jsQR !== "undefined") {
+          const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" });
+          if (code && code.data) {
+            handleQRResult(code.data);
+          } else {
+            alert("No se detecto un QR valido en la imagen. Intenta de nuevo.");
+          }
+        } else {
+          alert("Decoder QR no disponible");
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    input.remove();
+  };
+  document.body.appendChild(input);
+  input.click();
 }
 
 function scanQRLoop() {

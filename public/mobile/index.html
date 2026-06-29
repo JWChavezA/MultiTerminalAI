@@ -87,9 +87,9 @@
         <button type="button" class="key" data-seq="\x1b[C" title="Derecha">→</button>
         <button type="button" class="key" id="showKeyboard" title="Mostrar/ocultar teclado">⌨</button>
       </div>
-      <form id="commandForm" class="command-bar">
-        <input id="commandInput" autocomplete="off" spellcheck="false" placeholder="Escribe un comando" />
-        <button>Enviar</button>
+      <form id="commandForm" class="command-bar" onsubmit="return false">
+        <input id="commandInput" autocomplete="off" spellcheck="false" placeholder="Escribe un comando" enterkeyhint="send" />
+        <button type="submit" id="commandSend">Enviar</button>
       </form>
     </main>
 

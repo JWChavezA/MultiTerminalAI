@@ -274,17 +274,31 @@ if ("serviceWorker" in navigator) {
 // === Menu de sesion (ConnectBot style) ===
 const terminalMenu = $("#terminalMenu");
 const terminalMore = $("#terminalMore");
+const mobileTerminal = $("#mobileTerminal");
+const terminalView = $("#terminalView");
+function closeTerminalMenu() {
+  if (terminalMenu && !terminalMenu.hidden) terminalMenu.hidden = true;
+}
 if (terminalMore && terminalMenu) {
   terminalMore.addEventListener("click", (event) => {
     event.stopPropagation();
     terminalMenu.hidden = !terminalMenu.hidden;
   });
-  // Cerrar menu al tap fuera
+  // Cerrar menu al tap en cualquier parte fuera del menu y fuera del boton More.
+  // Usamos capture phase para que dispare antes que xterm.js capture sus eventos.
   document.addEventListener("click", (event) => {
     if (terminalMenu.hidden) return;
     if (terminalMenu.contains(event.target)) return;
     if (terminalMore.contains(event.target)) return;
     terminalMenu.hidden = true;
+  }, true);
+  // Cerrar menu al tap en el area del terminal (xterm) -- xterm.js no propaga clicks al document.
+  if (mobileTerminal) {
+    mobileTerminal.addEventListener("click", () => closeTerminalMenu());
+  }
+  // Cerrar menu con ESC
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeTerminalMenu();
   });
 }
 

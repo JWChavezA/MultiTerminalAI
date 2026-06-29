@@ -67,6 +67,16 @@
         <button id="terminalRestart" class="round">↻</button>
       </header>
       <div id="mobileTerminal" class="mobile-terminal"></div>
+      <div id="keyBar" class="key-bar" aria-label="Teclas rapidas">
+        <button type="button" class="key toggle" id="ctrlKey" title="Ctrl (siguiente tecla = Ctrl+key)">Ctrl</button>
+        <button type="button" class="key" data-seq="\x1b" title="Esc">Esc</button>
+        <button type="button" class="key" data-seq="-" title="Guion / menos">-</button>
+        <button type="button" class="key" data-seq="\x1b[A" title="Arriba (historial)">↑</button>
+        <button type="button" class="key" data-seq="\x1b[B" title="Abajo (historial)">↓</button>
+        <button type="button" class="key" data-seq="\x1b[D" title="Izquierda">←</button>
+        <button type="button" class="key" data-seq="\x1b[C" title="Derecha">→</button>
+        <button type="button" class="key" id="showKeyboard" title="Mostrar/ocultar teclado">⌨</button>
+      </div>
       <form id="commandForm" class="command-bar">
         <input id="commandInput" autocomplete="off" spellcheck="false" placeholder="Escribe un comando" />
         <button>Enviar</button>

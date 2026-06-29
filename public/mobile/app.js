@@ -79,7 +79,8 @@ function ensureTerminal() {
   mobileState.terminal.open($("#mobileTerminal"));
   mobileState.terminal.onData((data) => {
     if (mobileState.socket?.readyState === WebSocket.OPEN) {
-      mobileState.socket.send(JSON.stringify({ type: "data", data }));
+      const transformed = typeof applyCtrlIfArmed === "function" ? applyCtrlIfArmed(data) : data;
+      mobileState.socket.send(JSON.stringify({ type: "data", data: transformed }));
     }
   });
   window.addEventListener("resize", fitTerminal);
@@ -175,10 +176,88 @@ $("#commandForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const value = $("#commandInput").value;
   if (value && mobileState.socket?.readyState === WebSocket.OPEN) {
-    mobileState.socket.send(JSON.stringify({ type: "data", data: `${value}\r` }));
+    const transformed = typeof applyCtrlIfArmed === "function" ? applyCtrlIfArmed(value) : value;
+    mobileState.socket.send(JSON.stringify({ type: "data", data: `${transformed}\r` }));
     $("#commandInput").value = "";
   }
 });
+
+// Teclas rapidas: flechas, Esc, Tab, Del mandan secuencias ANSI por el socket.
+// Ctrl queda armado y convierte el PROXIMO caracter en Ctrl+key (ASCII 1..26).
+// Cuando el modo Ctrl esta activo, al escribir en el terminal o en el input command,
+// el caracter se envia como Ctrl+letter por el socket.
+function sendSocketData(data) {
+  if (mobileState.socket?.readyState === WebSocket.OPEN) {
+    mobileState.socket.send(JSON.stringify({ type: "data", data }));
+  }
+}
+
+const ctrlKey = $("#ctrlKey");
+if (ctrlKey) {
+  ctrlKey.addEventListener("click", () => {
+    ctrlKey.classList.toggle("active");
+  });
+}
+
+// Toggle del teclado nativo: si esta visible, lo ocultamos (deja el WebView con foco);
+// si no, lo mostramos y damos foco al input command.
+const showKeyboard = $("#showKeyboard");
+if (showKeyboard) {
+  showKeyboard.addEventListener("click", () => {
+    const inputFocused = document.activeElement === commandInput;
+    if (inputFocused) {
+      // Devolver foco al xterm y ocultar teclado nativo
+      mobileState.terminal?.focus();
+      commandInput?.blur();
+    } else {
+      commandInput?.focus();
+    }
+  });
+}
+
+document.querySelectorAll("#keyBar .key[data-seq]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const seq = btn.dataset.seq || "";
+    sendSocketData(seq);
+    // Tras enviar, devuelve foco al terminal para que el usuario pueda seguir escribiendo
+    mobileState.terminal?.focus();
+  });
+});
+
+// Interceptar el siguiente input (terminal o commandInput) cuando Ctrl este activo.
+function applyCtrlIfArmed(raw) {
+  if (!ctrlKey?.classList.contains("active")) return raw;
+  // Para Ctrl+letter: si el caracter es una letra a-z/A-Z, mandar control+letra (1..26)
+  // Otros caracteres (flechas, espacios) pasan normales.
+  if (raw.length === 1) {
+    const code = raw.charCodeAt(0);
+    if (code >= 0x61 && code <= 0x7a) {
+      ctrlKey.classList.remove("active");
+      return String.fromCharCode(code - 0x60); // Ctrl+a..z
+    }
+    if (code >= 0x41 && code <= 0x5a) {
+      ctrlKey.classList.remove("active");
+      return String.fromCharCode(code - 0x40); // Ctrl+A..Z
+    }
+  }
+  return raw;
+}
+
+// Hook del input command: si Ctrl esta armado y se mete UN SOLO caracter,
+// lo enviamos inmediatamente como Ctrl+key y vaciamos el input.
+const commandInput = $("#commandInput");
+if (commandInput) {
+  commandInput.addEventListener("input", () => {
+    if (!ctrlKey?.classList.contains("active")) return;
+    const value = commandInput.value;
+    if (value.length === 0) return;
+    const transformed = applyCtrlIfArmed(value);
+    if (transformed !== value) {
+      sendSocketData(transformed);
+      commandInput.value = "";
+    }
+  });
+}
 
 $("#pairCode").value = params.get("pair") || "";
 $("#deviceName").value = localStorage.getItem("mtai_device_name") || "Mi teléfono";

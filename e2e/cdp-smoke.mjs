@@ -97,7 +97,12 @@ async function waitFor(cdp, expression, timeoutMs = 15000) {
   throw new Error(`Timeout esperando: ${expression}`);
 }
 
-const child = spawn(electronPath, ["."], {
+// Linux workaround: si el SUID sandbox helper no esta configurado correctamente,
+// permite desactivar el sandbox via env (solo en este test, no afecta la app real).
+const noSandbox = process.env.MULTITERMINALAI_E2E_NO_SANDBOX === "1";
+const electronArgs = noSandbox ? ["--no-sandbox", "."] : ["."];
+
+const child = spawn(electronPath, electronArgs, {
   cwd: rootDir,
   env: {
     ...process.env,

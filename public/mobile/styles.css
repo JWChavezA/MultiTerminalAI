@@ -216,6 +216,37 @@ section {
   height: 100%;
 }
 
+.key-bar {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  padding: 6px 12px 0;
+}
+
+.key-bar .key {
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0 8px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.key-bar .key:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.key-bar .key.toggle.active {
+  background: #3a82ff;
+  color: #fff;
+  border-color: #3a82ff;
+}
+
 .command-bar {
   display: grid;
   grid-template-columns: 1fr 92px;

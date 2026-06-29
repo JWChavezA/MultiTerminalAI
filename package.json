@@ -9,7 +9,7 @@
     "start": "node server.js",
     "start:web": "node server.js",
     "desktop": "electron .",
-    "e2e": "node e2e/ws-fragment-smoke.mjs && node e2e/mobile-remote-smoke.mjs && node e2e/cdp-smoke.mjs",
+    "e2e": "node e2e/ws-fragment-smoke.mjs && node e2e/mobile-remote-smoke.mjs && node e2e/cdp-smoke.mjs && node e2e/dup-input-smoke.mjs && node e2e/dup-burst-smoke.mjs",
     "build:apk": "powershell.exe -ExecutionPolicy Bypass -File ./android-mobile/build-apk.ps1",
     "pack:win": "electron-builder --win nsis portable",
     "pack:linux": "electron-builder --linux AppImage deb",

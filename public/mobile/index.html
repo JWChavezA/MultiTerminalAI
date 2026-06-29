@@ -2,16 +2,29 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#06070d" />
     <title>MultiTerminalAI Remote</title>
     <link rel="manifest" href="/mobile/manifest.json" />
     <link rel="stylesheet" href="/vendor/@xterm/xterm/css/xterm.css" />
     <link rel="stylesheet" href="/mobile/styles.css" />
   </head>
   <body>
+    <!-- ========== PAIR SCREEN ========== -->
     <main id="pairView" class="screen pair-screen" hidden>
+      <div class="pair-logo">
+        <svg viewBox="0 0 108 108" fill="none" class="pair-logo-svg">
+          <rect x="14" y="22" width="80" height="56" rx="8" fill="#0F172A" stroke="#22D3EE" stroke-width="2.5"/>
+          <rect x="14" y="22" width="80" height="12" rx="8" fill="#1E293B"/>
+          <circle cx="22" cy="28" r="2" fill="#F56B7A"/><circle cx="28" cy="28" r="2" fill="#F5BF4A"/><circle cx="34" cy="28" r="2" fill="#3CCF91"/>
+          <text x="22" y="58" fill="#3CCF91" font-family="monospace" font-size="11" font-weight="bold">$</text>
+          <text x="32" y="58" fill="#22D3EE" font-family="monospace" font-size="10">codex</text>
+          <rect x="56" y="48" width="30" height="22" rx="4" fill="#1E293B" stroke="#A055F7" stroke-width="1.5"/>
+          <text x="62" y="62" fill="#A78BFA" font-family="sans-serif" font-size="10" font-weight="bold">AI</text>
+        </svg>
+      </div>
       <h1>Conectar teléfono</h1>
-      <p>Usa Tailscale y acepta la solicitud desde el ordenador.</p>
+      <p class="pair-hint">Usa Tailscale y acepta la solicitud desde el ordenador.</p>
       <label>
         Nombre del teléfono
         <input id="deviceName" autocomplete="name" />
@@ -24,72 +37,109 @@
       <p id="pairStatus" class="status"></p>
     </main>
 
+    <!-- ========== HOME SCREEN ========== -->
     <main id="homeView" class="screen home-screen" hidden>
       <header class="mobile-header">
-        <button id="backButton" class="round">‹</button>
+        <button id="backButton" class="round" title="Desconectar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
         <h1>Remote</h1>
-        <button id="moreButton" class="round">...</button>
+        <button id="moreButton" class="round" title="Opciones">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
       </header>
 
-      <section class="computer-line">
-        <span class="online-dot"></span>
-        <span class="computer-icon">▱</span>
-        <strong id="computerName">PC</strong>
+      <section class="computer-card">
+        <div class="computer-pulse"></div>
+        <div class="computer-info">
+          <span class="computer-label">Conectado a</span>
+          <strong id="computerName">PC</strong>
+        </div>
+        <svg class="computer-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
       </section>
 
-      <section>
-        <h2>Projects</h2>
-        <button id="chatsButton" class="project-row">▤ <span>Chats</span></button>
+      <section class="list-section">
+        <h2>Proyectos</h2>
+        <button id="chatsButton" class="list-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <span>Chats</span>
+        </button>
         <div id="projectList"></div>
       </section>
 
-      <section>
-        <h2>Recents</h2>
+      <section class="list-section">
+        <h2>Recientes</h2>
         <div id="recentList"></div>
       </section>
 
       <footer class="bottom-bar">
         <label class="search-box">
-          <span>⌕</span>
-          <input id="searchInput" placeholder="Search chats" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input id="searchInput" placeholder="Buscar chat..." />
         </label>
-        <button id="chatButton" class="chat-button">✎ Chat</button>
+        <button id="chatButton" class="chat-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Nuevo
+        </button>
       </footer>
     </main>
 
+    <!-- ========== TERMINAL SCREEN ========== -->
     <main id="terminalView" class="screen terminal-screen" hidden>
-      <header class="mobile-header" id="terminalHeader">
-        <button id="terminalBack" class="round" title="Volver">‹</button>
-        <div>
+      <header class="mobile-header terminal-header" id="terminalHeader">
+        <button id="terminalBack" class="round" title="Volver">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="terminal-title">
           <h1 id="terminalTitle">Chat</h1>
           <p id="terminalSubtitle"></p>
         </div>
-        <button id="terminalPaste" class="round" title="Pegar portapapeles">⎘</button>
-        <button id="terminalMore" class="round" title="Mas opciones">…</button>
+        <button id="terminalPaste" class="round round-sm" title="Pegar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+        </button>
+        <button id="terminalMore" class="round round-sm" title="Más">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
       </header>
+
       <div id="terminalMenu" class="terminal-menu" hidden>
-        <button type="button" data-action="restart" title="Reiniciar sesion">↻ Reiniciar</button>
-        <button type="button" data-action="disconnect" title="Cerrar WebSocket (no mata el PTY)">⎋ Desconectar</button>
-        <button type="button" data-action="close" title="Cerrar sesion y volver al inicio">✕ Cerrar sesion</button>
-        <button type="button" data-action="autohide" id="autohideToggle" title="Ocultar/mostrar barra">↕ Ocultar barra</button>
-        <button type="button" data-action="urlscan" title="Buscar URLs en la terminal">🔗 Escanear URLs</button>
-        <button type="button" data-action="copySelection" title="Copiar texto seleccionado">⎘ Copiar seleccion</button>
-        <button type="button" data-action="paste" title="Pegar desde portapapeles">⎗ Pegar</button>
+        <button type="button" data-action="restart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Reiniciar</button>
+        <button type="button" data-action="disconnect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg> Desconectar</button>
+        <button type="button" data-action="close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg> Cerrar sesión</button>
+        <button type="button" data-action="autohide" id="autohideToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg> Ocultar barra</button>
+        <button type="button" data-action="urlscan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> Escanear URLs</button>
+        <button type="button" data-action="copySelection"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar selección</button>
+        <button type="button" data-action="paste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Pegar</button>
       </div>
+
       <div id="mobileTerminal" class="mobile-terminal"></div>
-      <div id="keyBar" class="key-bar" aria-label="Teclas rapidas">
-        <button type="button" class="key toggle" id="ctrlKey" title="Ctrl (siguiente tecla = Ctrl+key)">Ctrl</button>
+
+      <div id="keyBar" class="key-bar">
+        <button type="button" class="key toggle" id="ctrlKey" title="Ctrl">Ctrl</button>
         <button type="button" class="key" data-seq="\x1b" title="Esc">Esc</button>
-        <button type="button" class="key" data-seq="-" title="Guion / menos">-</button>
-        <button type="button" class="key" data-seq="\x1b[A" title="Arriba (historial)">↑</button>
-        <button type="button" class="key" data-seq="\x1b[B" title="Abajo (historial)">↓</button>
-        <button type="button" class="key" data-seq="\x1b[D" title="Izquierda">←</button>
-        <button type="button" class="key" data-seq="\x1b[C" title="Derecha">→</button>
-        <button type="button" class="key" id="showKeyboard" title="Mostrar/ocultar teclado">⌨</button>
+        <button type="button" class="key" data-seq="-" title="Menos">−</button>
+        <button type="button" class="key" data-seq="\x1b[A" title="Arriba">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+        <button type="button" class="key" data-seq="\x1b[B" title="Abajo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+        </button>
+        <button type="button" class="key" data-seq="\x1b[D" title="Izquierda">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <button type="button" class="key" data-seq="\x1b[C" title="Derecha">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <button type="button" class="key" id="showKeyboard" title="Teclado">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>
+        </button>
       </div>
+
       <form id="commandForm" class="command-bar" onsubmit="return false">
-        <input id="commandInput" autocomplete="off" spellcheck="false" placeholder="Escribe un comando" enterkeyhint="send" />
-        <button type="submit" id="commandSend">Enviar</button>
+        <input id="commandInput" autocomplete="off" spellcheck="false" placeholder="Escribe un comando..." enterkeyhint="send" />
+        <button type="submit" id="commandSend" title="Enviar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
       </form>
     </main>
 

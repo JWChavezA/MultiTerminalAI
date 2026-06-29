@@ -365,8 +365,19 @@ public class MainActivity extends Activity {
                         // ir a gestor
                         showConnectionsScreen();
                     }
+                } else if (countConnections() == 1) {
+                    // Era la primera conexion y ya esta activa, cargar directo
+                    try {
+                        JSONArray arr = new JSONArray(prefs.getString(KEY_CONNECTIONS, "[]"));
+                        if (arr.length() > 0) {
+                            String firstId = arr.getJSONObject(0).getString("id");
+                            loadRemote(getUrlForId(firstId));
+                            return;
+                        }
+                    } catch (JSONException e) {}
+                    showConnectionsScreen();
                 } else {
-                    // agregando nueva: ir a gestor
+                    // agregando nueva (ya hay otras): ir al gestor
                     showConnectionsScreen();
                 }
             })

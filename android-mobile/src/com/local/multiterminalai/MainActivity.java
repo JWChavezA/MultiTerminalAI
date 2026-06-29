@@ -7,15 +7,12 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
-import android.view.WindowManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.JavascriptInterface;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -23,6 +20,7 @@ import android.widget.TextView;
 public class MainActivity extends Activity {
     private static final String PREFS = "mtai_remote";
     private static final String KEY_URL = "remote_url";
+    private static final String KEY_TOKEN = "device_token";
 
     private WebView webView;
     private SharedPreferences prefs;
@@ -34,16 +32,13 @@ public class MainActivity extends Activity {
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         setupWebView();
 
-        // Edge-to-edge: ahora setContentView ya fue llamado en setupWebView(),
-        // getWindow() tiene un DecorView valido.
+        // Edge-to-edge
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             try {
                 getWindow().setStatusBarColor(Color.TRANSPARENT);
                 getWindow().setNavigationBarColor(Color.TRANSPARENT);
                 getWindow().setDecorFitsSystemWindows(false);
-            } catch (Exception ignored) {
-                // Si fallara en algun dispositivo, no rompemos la app
-            }
+            } catch (Exception ignored) {}
         }
 
         String savedUrl = prefs.getString(KEY_URL, "");
@@ -64,8 +59,44 @@ public class MainActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         settings.setUserAgentString(settings.getUserAgentString() + " MultiTerminalAI-Android");
-        webView.setWebViewClient(new WebViewClient());
+
+        // Intercept URL loads to capture token from pairing flow
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                // Inject saved token into localStorage so PWA skips pairing
+                String savedToken = prefs.getString(KEY_TOKEN, "");
+                if (!savedToken.isEmpty()) {
+                    view.evaluateJavascript(
+                        "try { if (!localStorage.getItem('mtai_token')) localStorage.setItem('mtai_token', '" + savedToken + "'); } catch(e) {}",
+                        null);
+                }
+                // Also capture token when PWA saves it
+                view.evaluateJavascript(
+                    "(function() { " +
+                    "  var orig = localStorage.setItem.bind(localStorage); " +
+                    "  localStorage.setItem = function(k, v) { " +
+                    "    orig(k, v); " +
+                    "    if (k === 'mtai_token') { " +
+                    "      AndroidBridge.saveToken(v); " +
+                    "    } " +
+                    "  }; " +
+                    "  var existing = orig('mtai_token'); " +
+                    "  if (existing) AndroidBridge.saveToken(existing); " +
+                    "})();",
+                    null);
+            }
+        });
         webView.setWebChromeClient(new WebChromeClient());
+        // Add JS interface for token persistence
+        webView.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void saveToken(String token) {
+                prefs.edit().putString(KEY_TOKEN, token).apply();
+            }
+        }, "AndroidBridge");
+
         setContentView(webView);
     }
 
@@ -78,13 +109,15 @@ public class MainActivity extends Activity {
         help.setText("Introduce la URL que muestra MultiTerminalAI en Remoto. Ejemplo: http://100.x.y.z:12345/mobile/");
         help.setTextColor(Color.DKGRAY);
         help.setGravity(Gravity.START);
-        layout.addView(help, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        layout.addView(help, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         EditText input = new EditText(this);
         input.setSingleLine(true);
         input.setHint("http://IP_TAILSCALE:PUERTO/mobile/");
         input.setText(prefs.getString(KEY_URL, ""));
-        layout.addView(input, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        layout.addView(input, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         new AlertDialog.Builder(this)
             .setTitle("MultiTerminalAI Remote")

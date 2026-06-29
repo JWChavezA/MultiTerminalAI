@@ -58,7 +58,7 @@ mv "$OUT/with-dex.apk" "$OUT/unsigned.apk"
 echo "[6/6] zipalign + firmar (debug keystore)..."
 ALIGNED="$OUT/aligned.apk"
 FINAL="$OUT/MTAI-Remote.apk"
-KEYSTORE="$OUT/debug.keystore"
+KEYSTORE="$ROOT/debug.keystore"
 "$BUILD_TOOLS/zipalign" -f -p 4 "$OUT/unsigned.apk" "$ALIGNED"
 
 if [ ! -f "$KEYSTORE" ]; then

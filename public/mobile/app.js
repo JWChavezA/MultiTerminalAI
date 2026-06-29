@@ -15,6 +15,7 @@ function show(view) {
   $("#pairView").hidden = view !== "pair";
   $("#homeView").hidden = view !== "home";
   $("#terminalView").hidden = view !== "terminal";
+  $("#connectionsView").hidden = view !== "connections";
 }
 
 async function api(path, options = {}) {
@@ -171,6 +172,12 @@ $("#terminalBack").addEventListener("click", () => {
   mobileState.socket?.close();
   show("home");
 });
+
+// back en home = ir al gestor de conexiones
+$("#backButton")?.addEventListener("click", () => {
+  mobileState.socket?.close();
+  NativeBridge.showManager();
+});
 // terminalRestart fue removido del HTML; el menu "..." ahora tiene la opcion "Reiniciar"
 const terminalRestartEl = $("#terminalRestart");
 if (terminalRestartEl) {
@@ -265,10 +272,98 @@ if (commandInput) {
 
 $("#pairCode").value = params.get("pair") || "";
 $("#deviceName").value = localStorage.getItem("mtai_device_name") || "Mi teléfono";
-loadHome().catch(() => show("pair"));
+
+// Si llegamos con ?show=connections, mostrar gestor; sino flujo normal
+if (params.get("show") === "connections") {
+  showConnectionsManager();
+} else {
+  loadHome().catch(() => show("pair"));
+}
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/mobile/sw.js").catch(() => {});
+}
+
+// === Connections Manager ===
+// Lee conexiones del bridge nativo, las pinta, permite agregar/editar/eliminar/activar.
+function showConnectionsManager() {
+  const list = $("#connList");
+  if (!list) return;
+
+  function render() {
+    let conns = [];
+    try { conns = JSON.parse(NativeBridge.getConnections() || "[]"); } catch (e) {}
+    const activeId = NativeBridge.getActiveId();
+
+    if (conns.length === 0) {
+      list.innerHTML = `<div class="conn-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <p>No tienes conexiones guardadas</p>
+        <span>Agrega una para empezar</span>
+      </div>`;
+      return;
+    }
+
+    list.innerHTML = conns.map((c) => {
+      const isActive = c.id === activeId;
+      const host = (() => { try { return new URL(c.url).host; } catch { return c.url; } })();
+      return `
+        <div class="conn-card ${isActive ? "active" : ""}" data-id="${c.id}">
+          <div class="conn-card-pulse ${isActive ? "on" : ""}"></div>
+          <div class="conn-card-body">
+            <div class="conn-card-row">
+              <strong>${escapeHtml(c.name)}</strong>
+              ${isActive ? '<span class="conn-badge">Activa</span>' : ""}
+            </div>
+            <div class="conn-card-url">${escapeHtml(host)}</div>
+          </div>
+          <div class="conn-card-actions">
+            <button class="conn-icon-btn edit" data-action="edit" data-id="${c.id}" title="Editar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </button>
+            <button class="conn-icon-btn delete" data-action="remove" data-id="${c.id}" title="Eliminar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    // Click en la card = activar (excepto si toca un boton de accion)
+    list.querySelectorAll(".conn-card").forEach((card) => {
+      card.addEventListener("click", (e) => {
+        if (e.target.closest(".conn-icon-btn")) return;
+        const id = card.dataset.id;
+        if (id !== NativeBridge.getActiveId()) {
+          NativeBridge.setActive(id);
+        }
+      });
+    });
+    list.querySelectorAll(".conn-icon-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        if (btn.dataset.action === "edit") {
+          NativeBridge.edit(id);
+        } else if (btn.dataset.action === "remove") {
+          if (confirm("¿Eliminar esta conexion?")) {
+            NativeBridge.remove(id);
+            render();
+          }
+        }
+      });
+    });
+  }
+
+  $("#connAddButton")?.addEventListener("click", () => NativeBridge.addNew());
+  $("#connBackButton")?.addEventListener("click", () => NativeBridge.goToActive());
+
+  show("connections");
+  render();
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
 }
 
 // === Menu de sesion (ConnectBot style) ===

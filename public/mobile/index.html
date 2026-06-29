@@ -10,6 +10,28 @@
     <link rel="stylesheet" href="/mobile/styles.css" />
   </head>
   <body>
+    <!-- ========== CONNECTIONS MANAGER ========== -->
+    <main id="connectionsView" class="screen connections-screen" hidden>
+      <header class="mobile-header">
+        <button id="connBackButton" class="round" title="Volver">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <h1>Conexiones</h1>
+        <div style="width:48px"></div>
+      </header>
+
+      <div class="conn-header">
+        <p>Tus servidores MultiTerminalAI. Toca uno para conectar.</p>
+      </div>
+
+      <div id="connList" class="conn-list"></div>
+
+      <button id="connAddButton" class="conn-add-button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Agregar conexion
+      </button>
+    </main>
+
     <!-- ========== PAIR SCREEN ========== -->
     <main id="pairView" class="screen pair-screen" hidden>
       <div class="pair-logo">

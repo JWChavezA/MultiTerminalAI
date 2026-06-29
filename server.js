@@ -162,25 +162,23 @@ function findSession(state, projectId, sessionId) {
 }
 
 function shellCommand(shell, command) {
+  // Si hay un comando especifico (como "claude"), ejecutarlo directamente
+  // sin bash de por medio. Asi las flechas/Esc/Ctrl van directo al proceso
+  // y no son interceptadas por readline.
+  if (command && command.trim()) {
+    // Expandir el comando: soportar argumentos simples
+    const parts = command.trim().split(/\s+/);
+    const file = parts[0];
+    const args = parts.slice(1);
+    return { file, args, initial: "" };
+  }
   if (shell === "cmd" && process.platform === "win32") {
-    return {
-      file: "cmd.exe",
-      args: [],
-      initial: command
-    };
+    return { file: "cmd.exe", args: [], initial: "" };
   }
   if (shell === "bash" || process.platform !== "win32") {
-    return {
-      file: process.env.SHELL || "bash",
-      args: ["-i"],
-      initial: command
-    };
+    return { file: process.env.SHELL || "bash", args: ["-i"], initial: "" };
   }
-  return {
-    file: "powershell.exe",
-    args: ["-NoLogo"],
-    initial: command
-  };
+  return { file: "powershell.exe", args: ["-NoLogo"], initial: "" };
 }
 
 function openNativeTerminal(project, session) {

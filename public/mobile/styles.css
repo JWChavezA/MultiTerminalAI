@@ -227,6 +227,10 @@ section {
   overflow-x: hidden;
 }
 
+.terminal-menu[hidden] {
+  display: none !important;
+}
+
 .terminal-menu {
   position: fixed;
   top: 64px;

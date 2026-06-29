@@ -257,6 +257,68 @@ public class MainActivity extends Activity {
         loadRemote(target);
     }
 
+    private void showScanUrlDialog() {
+        // Dialogo para pegar la URL del QR (o escribir manualmente)
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(42, 28, 42, 0);
+
+        TextView help = new TextView(this);
+        help.setText("Pega la URL del QR mostrado en el escritorio, o escribe la direccion del servidor.");
+        help.setTextColor(Color.DKGRAY);
+        layout.addView(help, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setHint("http://100.x.y.z:4173/mobile/?pair=...");
+        layout.addView(input, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        new AlertDialog.Builder(this)
+            .setTitle("Conectar via QR")
+            .setView(layout)
+            .setCancelable(true)
+            .setPositiveButton("Conectar", (dialog, which) -> {
+                String url = normalizeUrl(input.getText().toString().trim());
+                // Si tiene ?pair=, extraer el codigo
+                processQRUrl(url);
+            })
+            .setNegativeButton("Cancelar", null)
+            .show();
+    }
+
+    public void processQRUrl(String url) {
+        // Extraer pair code si existe
+        String pairCode = "";
+        String baseUrl = url;
+        if (url.contains("?pair=") || url.contains("&pair=")) {
+            try {
+                java.net.URI uri = new java.net.URI(url);
+                String query = uri.getRawQuery();
+                if (query != null) {
+                    for (String param : query.split("&")) {
+                        if (param.startsWith("pair=")) {
+                            pairCode = param.substring(5);
+                            break;
+                        }
+                    }
+                }
+                baseUrl = uri.getScheme() + "://" + uri.getHost();
+                if (uri.getPort() > 0) baseUrl += ":" + uri.getPort();
+                baseUrl += "/mobile/";
+            } catch (Exception e) {}
+        }
+        // Crear la conexion
+        addOrUpdateConnection(null, null, baseUrl);
+        // Si hay pair code, cargar la URL con el pair
+        if (!pairCode.isEmpty()) {
+            loadRemote(baseUrl + "?pair=" + pairCode);
+        } else {
+            loadRemote(baseUrl);
+        }
+    }
+
     private void showConnectionsEmptyState() {
         // Cargar HTML inline con el gestor en empty state.
         // El boton Agregar llama a NativeBridge.addNew() (bridge existente).
@@ -305,6 +367,10 @@ public class MainActivity extends Activity {
             "<button id='connAddButton' class='conn-add-button' onclick='NativeBridge.addNew()'>" +
             "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'><path d='M12 5v14M5 12h14'/></svg>" +
             " Agregar conexion" +
+            "</button>" +
+            "<button class='conn-scan-button' onclick='NativeBridge.scanQR()'>" +
+            "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><rect x='3' y='3' width='7' height='7' rx='1'/><rect x='14' y='3' width='7' height='7' rx='1'/><rect x='3' y='14' width='7' height='7' rx='1'/><path d='M14 14h3M14 17h7M17 14v3M20 17v4'/></svg>" +
+            " Escanear QR" +
             "</button>" +
             "</main>" +
             "</body></html>";
@@ -516,6 +582,32 @@ public class MainActivity extends Activity {
             activity.runOnUiThread(new Runnable() {
                 @Override public void run() { activity.showAddConnectionDialog(null); }
             });
+        }
+
+        @JavascriptInterface
+        public void addConnection(String url) {
+            activity.addOrUpdateConnection(null, null, url);
+        }
+
+        @JavascriptInterface
+        public void processQR(final String url) {
+            activity.runOnUiThread(new Runnable() {
+                @Override public void run() { activity.processQRUrl(url); }
+            });
+        }
+
+        @JavascriptInterface
+        public void scanQR() {
+            // En el empty state (sin server cargado), no tenemos jsQR disponible.
+            // Mostrar dialogo nativo para pegar URL del QR.
+            activity.runOnUiThread(new Runnable() {
+                @Override public void run() { activity.showScanUrlDialog(); }
+            });
+        }
+
+        @JavascriptInterface
+        public void saveConnection(String url) {
+            activity.addOrUpdateConnection(null, null, url);
         }
 
         @JavascriptInterface

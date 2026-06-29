@@ -993,3 +993,101 @@ button, .round, .key, .list-row, .project-row, .recent-row {
   line-height: 1.5;
   color: var(--muted);
 }
+
+/* ========== QR SCANNER ========== */
+.conn-scan-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 54px;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(34,211,238,.15), rgba(160,85,247,.1));
+  color: var(--cyan);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all .15s ease;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+}
+.conn-scan-button:active {
+  transform: scale(.97);
+  background: linear-gradient(135deg, rgba(34,211,238,.25), rgba(160,85,247,.15));
+}
+.conn-scan-button svg { width: 20px; height: 20px; }
+
+.qr-scanner {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qr-scanner[hidden] { display: none !important; }
+.qr-scanner-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.9);
+}
+.qr-scanner-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.qr-scanner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.qr-scanner-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+.qr-scanner-video-wrap {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #000;
+}
+#qrVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.qr-scanner-frame {
+  position: absolute;
+  inset: 20px;
+  pointer-events: none;
+}
+.qr-corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--cyan);
+  filter: drop-shadow(0 0 8px rgba(34,211,238,.5));
+}
+.qr-corner.tl { top: 0; left: 0; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
+.qr-corner.tr { top: 0; right: 0; border-left: 0; border-bottom: 0; border-radius: 0 8px 0 0; }
+.qr-corner.bl { bottom: 0; left: 0; border-right: 0; border-top: 0; border-radius: 0 0 0 8px; }
+.qr-corner.br { bottom: 0; right: 0; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
+.qr-status {
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+.qr-status.success { color: var(--green); font-weight: 600; }
+.qr-status.error { color: var(--danger); font-weight: 600; }

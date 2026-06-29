@@ -361,8 +361,116 @@ function showConnectionsManager() {
   }
 
   $("#connAddButton")?.addEventListener("click", () => NativeBridge.addNew());
+  $("#connScanButton")?.addEventListener("click", startQRScanner);
   show("connections");
   render();
+}
+
+// ========== QR SCANNER ==========
+let qrStream = null;
+let qrScanning = false;
+
+$("#qrCloseButton")?.addEventListener("click", stopQRScanner);
+
+async function startQRScanner() {
+  const scanner = $("#qrScanner");
+  const video = $("#qrVideo");
+  const status = $("#qrStatus");
+  if (!scanner || !video) return;
+  scanner.hidden = false;
+  status.textContent = "Apunta al QR del escritorio";
+  status.className = "qr-status";
+  try {
+    qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    video.srcObject = qrStream;
+    qrScanning = true;
+    scanQRLoop();
+  } catch (err) {
+    status.textContent = "Camara: " + err.message;
+    status.className = "qr-status error";
+  }
+}
+
+function scanQRLoop() {
+  if (!qrScanning) return;
+  const video = $("#qrVideo");
+  const canvas = $("#qrCanvas");
+  if (video.readyState === video.HAVE_ENOUGH_DATA && typeof jsQR !== "undefined") {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" });
+    if (code && code.data) {
+      stopQRScanner();
+      handleQRResult(code.data);
+      return;
+    }
+  }
+  requestAnimationFrame(scanQRLoop);
+}
+
+function stopQRScanner() {
+  qrScanning = false;
+  if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
+  const s = $("#qrScanner");
+  if (s) s.hidden = true;
+}
+
+async function handleQRResult(qrData) {
+  const status = $("#qrStatus");
+  let url, pairCode;
+  try {
+    const parsed = new URL(qrData);
+    url = parsed.origin + parsed.pathname;
+    if (!url.endsWith("/mobile/")) { if (!url.endsWith("/")) url += "/"; url += "mobile/"; }
+    pairCode = parsed.searchParams.get("pair") || "";
+  } catch (e) {
+    alert("QR invalido: " + qrData.slice(0, 60));
+    return;
+  }
+  if (status) { status.textContent = "Conectando a " + new URL(url).host + "..."; status.className = "qr-status success"; }
+  // Crear conexion via bridge
+  if (typeof NativeBridge !== "undefined" && NativeBridge.addConnection) {
+    NativeBridge.addConnection(url);
+  }
+  // Si hay codigo de pair, hacer pairing automatico
+  if (pairCode) {
+    try {
+      const baseUrl = url.replace("/mobile/", "");
+      const pairRes = await fetch(baseUrl + "/api/mobile/pair", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: pairCode, deviceName: localStorage.getItem("mtai_device_name") || "Mi telefono" })
+      }).then(r => r.json());
+      if (pairRes.requestId) {
+        if (status) status.textContent = "Esperando aprobacion...";
+        const t0 = Date.now();
+        while (Date.now() - t0 < 60000) {
+          await new Promise(r => setTimeout(r, 1500));
+          const st = await fetch(baseUrl + "/api/mobile/pair/" + pairRes.requestId).then(r => r.json());
+          if (st.status === "accepted") {
+            mobileState.token = st.token;
+            localStorage.setItem("mtai_token", st.token);
+            if (typeof NativeBridge !== "undefined" && NativeBridge.reportToken) NativeBridge.reportToken(st.token);
+            if (status) status.textContent = "Conectado!";
+            setTimeout(() => location.href = url, 1000);
+            return;
+          }
+          if (st.status === "rejected") {
+            if (status) { status.textContent = "Rechazado en el escritorio"; status.className = "qr-status error"; }
+            return;
+          }
+        }
+        if (status) { status.textContent = "Timeout"; status.className = "qr-status error"; }
+      }
+    } catch (err) {
+      if (status) { status.textContent = "Error: " + err.message; status.className = "qr-status error"; }
+    }
+  } else {
+    // Sin pair code: solo crear la conexion y cargar
+    setTimeout(() => location.href = url, 1000);
+  }
 }
 
 // ========== INIT ==========
@@ -370,7 +478,19 @@ function showConnectionsManager() {
 $("#pairCode").value = params.get("pair") || "";
 $("#deviceName").value = localStorage.getItem("mtai_device_name") || "Mi teléfono";
 
-if (params.get("show") === "connections") {
+// Auto-pairing si viene con ?pair=CODE
+const autoPair = params.get("pair");
+if (autoPair) {
+  show("pair");
+  // Auto-enviar despues de un breve delay
+  setTimeout(() => {
+    requestPair().then(() => {
+      console.log("Auto-pair exitoso");
+    }).catch((err) => {
+      $("#pairStatus").textContent = err.message;
+    });
+  }, 500);
+} else if (params.get("show") === "connections") {
   showConnectionsManager();
 } else {
   loadHome().catch(() => show("pair"));

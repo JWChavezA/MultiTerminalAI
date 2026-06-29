@@ -23,7 +23,35 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         Agregar conexion
       </button>
+      <button id="connScanButton" class="conn-scan-button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3M14 17h7M17 14v3M20 17v4"/></svg>
+        Escanear QR
+      </button>
     </main>
+
+    <!-- ========== QR SCANNER OVERLAY ========== -->
+    <div id="qrScanner" class="qr-scanner" hidden>
+      <div class="qr-scanner-bg"></div>
+      <div class="qr-scanner-content">
+        <div class="qr-scanner-header">
+          <h2>Escanear codigo QR</h2>
+          <button id="qrCloseButton" class="round round-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="qr-scanner-video-wrap">
+          <video id="qrVideo" autoplay playsinline muted></video>
+          <canvas id="qrCanvas" hidden></canvas>
+          <div class="qr-scanner-frame">
+            <div class="qr-corner tl"></div>
+            <div class="qr-corner tr"></div>
+            <div class="qr-corner bl"></div>
+            <div class="qr-corner br"></div>
+          </div>
+        </div>
+        <p id="qrStatus" class="qr-status">Apunta al QR mostrado en el escritorio</p>
+      </div>
+    </div>
 
     <!-- ========== PAIR SCREEN ========== -->
     <main id="pairView" class="screen pair-screen" hidden>
@@ -110,6 +138,7 @@
 
     <script src="/vendor/@xterm/xterm/lib/xterm.js"></script>
     <script src="/vendor/@xterm/addon-fit/lib/addon-fit.js"></script>
+    <script src="/mobile/vendor/jsQR.js"></script>
     <script src="/mobile/app.js"></script>
   </body>
 </html>

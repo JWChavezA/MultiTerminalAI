@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Terminal window outline -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#22D3EE"
+        android:strokeWidth="2.5"
+        android:pathData="M 28 32 L 80 32 Q 84 32 84 36 L 84 72 Q 84 76 80 76 L 28 76 Q 24 76 24 72 L 24 36 Q 24 32 28 32 Z" />
+
+    <!-- Title bar -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M 24 32 L 84 32 L 84 42 L 24 42 Z" />
+
+    <!-- Traffic light dots -->
+    <path android:fillColor="#F56B7A" android:pathData="M 30 37 m -2 0 a 2 2 0 1 0 4 0 a 2 2 0 1 0 -4 0" />
+    <path android:fillColor="#F5BF4A" android:pathData="M 36 37 m -2 0 a 2 2 0 1 0 4 0 a 2 2 0 1 0 -4 0" />
+    <path android:fillColor="#3CCF91" android:pathData="M 42 37 m -2 0 a 2 2 0 1 0 4 0 a 2 2 0 1 0 -4 0" />
+
+    <!-- Prompt $ -->
+    <path
+        android:fillColor="#3CCF91"
+        android:pathData="M 32 54 L 35 54 L 35 58 L 38 58 L 38 60 L 35 60 L 35 64 L 32 64 L 32 60 L 30 60 L 30 58 L 32 58 Z" />
+
+    <!-- "codex" text represented as horizontal bars (monospace feel) -->
+    <path android:fillColor="#22D3EE" android:pathData="M 42 54 L 52 54 L 52 56.5 L 42 56.5 Z" />
+    <path android:fillColor="#22D3EE" android:pathData="M 42 58 L 50 58 L 50 60.5 L 42 60.5 Z" />
+    <path android:fillColor="#22D3EE" android:pathData="M 42 62 L 53 62 L 53 64.5 L 42 64.5 Z" />
+
+    <!-- cursor block -->
+    <path android:fillColor="#3CCF91" android:pathData="M 56 62 L 59 62 L 59 65 L 56 65 Z" />
+
+    <!-- AI badge bottom-right -->
+    <path
+        android:fillColor="#A055F7"
+        android:pathData="M 64 58 L 82 58 Q 86 58 86 62 L 86 74 Q 86 78 82 78 L 64 78 Q 60 78 60 74 L 60 62 Q 60 58 64 58 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 68 64 L 70 64 L 70 72 L 68 72 Z M 72 64 L 74 64 L 74 72 L 72 72 Z M 76 64 L 80 64 L 80 66 L 76 66 Z M 76 68 L 80 68 L 80 70 L 76 70 Z" />
+
+</vector>

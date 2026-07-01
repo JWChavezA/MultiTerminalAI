@@ -26,7 +26,8 @@ fi
 PKG="com.local.multiterminalai"
 PKG_DIR="$OUT/gen/$(echo $PKG | tr . /)"
 rm -rf "$OUT"
-mkdir -p "$OUT/compiled" "$OUT/gen" "$OUT/classes" "$OUT/dex"
+mkdir -p "$OUT/compiled" "$OUT/gen" "$OUT/classes" "$OUT/dex" "$OUT/assets"
+cp "$ROOT/../public/mobile/vendor/jsQR.js" "$OUT/assets/jsQR.js"
 
 echo "[1/6] aapt2 compile..."
 "$BUILD_TOOLS/aapt2" compile --dir "$ROOT/res" -o "$OUT/compiled/res.zip"
@@ -36,6 +37,7 @@ echo "[2/6] aapt2 link..."
   -o "$OUT/unsigned.apk" \
   -I "$PLATFORM_JAR" \
   --manifest "$ROOT/AndroidManifest.xml" \
+  -A "$OUT/assets" \
   "$OUT/compiled/res.zip" \
   --java "$OUT/gen"
 

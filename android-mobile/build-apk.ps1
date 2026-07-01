@@ -10,15 +10,16 @@ $Package = "com.local.multiterminalai"
 $Unsigned = Join-Path $Out "MTAI-Remote-unsigned.apk"
 $Aligned = Join-Path $Out "MTAI-Remote-aligned.apk"
 $Final = Join-Path $Out "MTAI-Remote.apk"
-$Keystore = Join-Path $Out "debug.keystore"
+$Keystore = Join-Path $Root "debug.keystore"
 
 Remove-Item -LiteralPath $Out -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force -Path $Out, (Join-Path $Out "classes"), (Join-Path $Out "compiled"), (Join-Path $Out "dex") | Out-Null
+New-Item -ItemType Directory -Force -Path $Out, (Join-Path $Out "classes"), (Join-Path $Out "compiled"), (Join-Path $Out "dex"), (Join-Path $Out "assets") | Out-Null
+Copy-Item -LiteralPath (Join-Path $Root "..\public\mobile\vendor\jsQR.js") -Destination (Join-Path $Out "assets\jsQR.js") -Force
 $env:JAVA_HOME = $Jdk
 $env:PATH = "$Jdk\bin;$env:PATH"
 
 & (Join-Path $BuildTools "aapt2.exe") compile --dir (Join-Path $Root "res") -o (Join-Path $Out "compiled\res.zip")
-& (Join-Path $BuildTools "aapt2.exe") link -o $Unsigned -I $Platform --manifest (Join-Path $Root "AndroidManifest.xml") (Join-Path $Out "compiled\res.zip") --java (Join-Path $Out "generated") --auto-add-overlay
+& (Join-Path $BuildTools "aapt2.exe") link -o $Unsigned -I $Platform --manifest (Join-Path $Root "AndroidManifest.xml") -A (Join-Path $Out "assets") (Join-Path $Out "compiled\res.zip") --java (Join-Path $Out "generated") --auto-add-overlay
 
 $Sources = @(
   (Join-Path $Root "src\com\local\multiterminalai\MainActivity.java"),

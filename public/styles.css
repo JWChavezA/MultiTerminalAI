@@ -373,6 +373,61 @@ h2 {
   color: var(--muted);
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 0.58);
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.modal {
+  width: min(440px, 100%);
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px;
+  background: #1f2024;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 0.42);
+}
+
+.modal h2 {
+  margin: 0 0 6px;
+}
+
+.modal p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.modal-eyebrow {
+  margin-bottom: 6px !important;
+  color: var(--accent) !important;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  padding: 0 14px;
+  background: var(--surface-2);
+}
+
 @media (max-width: 860px) {
   body {
     grid-template-columns: 1fr;

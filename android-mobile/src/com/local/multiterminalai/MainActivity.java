@@ -6,9 +6,11 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -84,6 +86,7 @@ public class MainActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         settings.setUserAgentString(settings.getUserAgentString() + " MultiTerminalAI-Android");
+        WebView.setWebContentsDebuggingEnabled(true);
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -110,6 +113,13 @@ public class MainActivity extends Activity {
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+                Log.d("MTAI-WebView", consoleMessage.message()
+                    + " -- " + consoleMessage.sourceId() + ":" + consoleMessage.lineNumber());
+                return true;
+            }
+
             @Override
             public void onPermissionRequest(android.webkit.PermissionRequest request) {
                 request.grant(request.getResources());
@@ -373,6 +383,13 @@ public class MainActivity extends Activity {
             ".conn-scan-button{display:flex;align-items:center;justify-content:center;gap:8px;height:54px;border:0;border-radius:16px;background:linear-gradient(135deg,rgba(34,211,238,.15),rgba(160,85,247,.1));color:#22d3ee;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;-webkit-tap-highlight-color:transparent}" +
             ".conn-scan-button:active{transform:scale(.97)}" +
             ".conn-scan-button svg{width:20px;height:20px}" +
+            ".qr-overlay{position:fixed;inset:0;background:#000;z-index:99;display:none;flex-direction:column}" +
+            ".qr-overlay.active{display:flex}" +
+            ".qr-overlay video{flex:1;width:100%;height:100%;object-fit:cover}" +
+            ".qr-overlay-bar{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;justify-content:space-between;padding:max(16px,env(safe-area-inset-top)) 16px 16px;background:linear-gradient(180deg,rgba(0,0,0,.65),transparent);color:white;font-weight:700}" +
+            ".qr-overlay button{border:0;border-radius:999px;background:rgba(255,255,255,.16);color:white;padding:10px 14px;font:inherit}" +
+            ".qr-guide{position:absolute;left:50%;top:50%;width:min(70vw,320px);aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid rgba(34,211,238,.9);border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.35)}" +
+            ".qr-status-live{position:absolute;left:16px;right:16px;bottom:max(28px,env(safe-area-inset-bottom));padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.62);color:white;text-align:center;font-size:14px}" +
             "</style>" +
             "</head>" +
             "<body>" +
@@ -392,22 +409,28 @@ public class MainActivity extends Activity {
             "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'><path d='M12 5v14M5 12h14'/></svg>" +
             " Agregar conexion" +
             "</button>" +
-            "<button class='conn-scan-button' id='emptyStateScanBtn'>" +
+            "<button class='conn-scan-button' id='emptyStateScanBtn' onclick='NativeBridge.startCamera()'>" +
             "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><rect x='3' y='3' width='7' height='7' rx='1'/><rect x='14' y='3' width='7' height='7' rx='1'/><rect x='3' y='14' width='7' height='7' rx='1'/><path d='M14 14h3M14 17h7M17 14v3M20 17v4'/></svg>" +
             " Escanear QR" +
             "</button>" +
             "</main>" +
+            "<div id='qrOverlay' class='qr-overlay'>" +
+            "<video id='qrVideo' autoplay playsinline muted></video>" +
+            "<canvas id='qrCanvas' style='display:none'></canvas>" +
+            "<div class='qr-overlay-bar'><span>Escanear QR</span><button onclick='stopNativeQRScanner()'>Cerrar</button></div>" +
+            "<div class='qr-guide'></div>" +
+            "<div id='qrLiveStatus' class='qr-status-live'>Apunta al QR mostrado en el escritorio</div>" +
+            "</div>" +
+            "<script src='jsQR.js'></script>" +
+            "<script>" +
+            "let qrStream=null,qrRunning=false;" +
+            "function stopNativeQRScanner(){qrRunning=false;if(qrStream){qrStream.getTracks().forEach(t=>t.stop());qrStream=null;}document.getElementById('qrOverlay').classList.remove('active');}" +
+            "async function startNativeQRScanner(){try{const o=document.getElementById('qrOverlay'),v=document.getElementById('qrVideo'),s=document.getElementById('qrLiveStatus');o.classList.add('active');s.textContent='Abriendo camara...';qrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});v.srcObject=qrStream;await v.play();qrRunning=true;s.textContent='Apunta al QR mostrado en el escritorio';requestAnimationFrame(scanNativeQRFrame);}catch(e){document.getElementById('qrLiveStatus').textContent='No se pudo abrir la camara: '+e.message;}}" +
+            "function scanNativeQRFrame(){if(!qrRunning)return;const v=document.getElementById('qrVideo'),c=document.getElementById('qrCanvas');if(v.readyState===v.HAVE_ENOUGH_DATA&&typeof jsQR!=='undefined'){const x=c.getContext('2d',{willReadFrequently:true});c.width=v.videoWidth;c.height=v.videoHeight;x.drawImage(v,0,0,c.width,c.height);const img=x.getImageData(0,0,c.width,c.height);const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});if(code&&code.data){handleQRResult(code.data);return;}}requestAnimationFrame(scanNativeQRFrame);}" +
+            "function handleQRResult(data){try{stopNativeQRScanner();NativeBridge.processQR(data);}catch(e){alert('QR invalido: '+String(data).slice(0,80));}}" +
+            "</script>" +
             "</body></html>";
-        webView.loadDataWithBaseURL("http://localhost", html, "text/html", "utf-8", null);
-        // Despues de cargar, agregar handler al boton de escanear
-        webView.postDelayed(() -> {
-            webView.evaluateJavascript(
-                "document.getElementById('emptyStateScanBtn')?.addEventListener('click', function() { " +
-                "  if (typeof NativeBridge !== 'undefined' && NativeBridge.startCamera) { " +
-                "    NativeBridge.startCamera(); " +
-                "  } " +
-                "});", null);
-        }, 100);
+        webView.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "utf-8", null);
     }
 
     // === Dialog de error de conexion ===
@@ -576,6 +599,29 @@ public class MainActivity extends Activity {
         return true;
     }
 
+    private void openDirectCameraOrGallery() {
+        try {
+            android.content.Intent camIntent = new android.content.Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+            startActivityForResult(camIntent, 2002);
+        } catch (Exception e) {
+            try {
+                android.content.Intent galIntent = new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
+                galIntent.setType("image/*");
+                startActivityForResult(android.content.Intent.createChooser(galIntent, "Elegir imagen"), 1001);
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private void startInlineScannerOrCamera() {
+        webView.evaluateJavascript(
+            "typeof startNativeQRScanner === 'function' ? (startNativeQRScanner(), true) : false",
+            value -> {
+                if (!"true".equals(value)) {
+                    openDirectCameraOrGallery();
+                }
+            });
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == 2001) {
@@ -596,6 +642,18 @@ public class MainActivity extends Activity {
                     mFilePathCallback.onReceiveValue(null);
                     mFilePathCallback = null;
                 }
+            }
+        }
+        if (requestCode == 2003) {
+            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            if (granted) {
+                startInlineScannerOrCamera();
+            } else {
+                try {
+                    android.content.Intent galIntent = new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
+                    galIntent.setType("image/*");
+                    startActivityForResult(android.content.Intent.createChooser(galIntent, "Elegir imagen"), 1001);
+                } catch (Exception ignored) {}
             }
         }
     }
@@ -730,15 +788,12 @@ public class MainActivity extends Activity {
             // Abrir camara directamente con Intent
             activity.runOnUiThread(new Runnable() {
                 @Override public void run() {
-                    try {
-                        android.content.Intent camIntent = new android.content.Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-                        activity.startActivityForResult(camIntent, 2002);
-                    } catch (Exception e) {
-                        // Si no hay camara, abrir galeria
-                        android.content.Intent galIntent = new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
-                        galIntent.setType("image/*");
-                        activity.startActivityForResult(android.content.Intent.createChooser(galIntent, "Elegir imagen"), 1001);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                            && activity.checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        activity.requestPermissions(new String[]{android.Manifest.permission.CAMERA}, 2003);
+                        return;
                     }
+                    activity.startInlineScannerOrCamera();
                 }
             });
         }

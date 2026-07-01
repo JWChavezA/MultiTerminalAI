@@ -6,7 +6,10 @@ const state = {
   socket: null,
   lastTerminalData: "",
   terminal: null,
-  fitAddon: null
+  fitAddon: null,
+  remotePendingIds: new Set(),
+  activeRemoteRequest: null,
+  remotePollBusy: false
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -15,6 +18,7 @@ const terminalHost = $("#terminal");
 const actionMenu = $("#actionMenu");
 const terminalPanel = document.querySelector(".terminal-panel");
 const remotePanel = $("#remotePanel");
+const remoteRequestModal = $("#remoteRequestModal");
 const defaultShell = navigator.platform.toLowerCase().includes("win") ? "powershell" : "bash";
 
 async function api(path, options = {}) {
@@ -151,10 +155,11 @@ function connectTerminal() {
   state.terminal.write(`Conectando ${project.name} / ${session.name}...\r\n`);
   fitTerminal();
   const scheme = location.protocol === "https:" ? "wss" : "ws";
-  state.socket = new WebSocket(
+  const socket = new WebSocket(
     `${scheme}://${location.host}/terminal?project=${project.id}&session=${session.id}&cols=${state.terminal.cols}&rows=${state.terminal.rows}`
   );
-  state.socket.addEventListener("message", (event) => {
+  state.socket = socket;
+  socket.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
     if (message.type === "data") {
       state.lastTerminalData += message.data;
@@ -162,13 +167,13 @@ function connectTerminal() {
       state.terminal.write(message.data);
     }
   });
-  state.socket.addEventListener("open", () => {
+  socket.addEventListener("open", () => {
     fitTerminal();
     state.terminal.focus();
     render();
   });
-  state.socket.addEventListener("close", () => {
-    state.socket = null;
+  socket.addEventListener("close", () => {
+    if (state.socket === socket) state.socket = null;
     render();
   });
 }
@@ -181,8 +186,8 @@ async function load() {
   render();
 }
 
-async function loadRemoteState() {
-  const remote = await api("/api/remote/state");
+async function loadRemoteState(remote = null) {
+  remote ||= await api("/api/remote/state");
   $("#pendingConnections").innerHTML =
     remote.pending.length === 0
       ? `<p class="empty">No hay solicitudes pendientes.</p>`
@@ -213,6 +218,53 @@ async function loadRemoteState() {
             `
           )
           .join("");
+
+  return remote;
+}
+
+function showRemoteRequestModal(request) {
+  state.activeRemoteRequest = request;
+  $("#remoteRequestText").textContent = `${request.deviceName || "Un telefono"} quiere conectarse a este ordenador.`;
+  remoteRequestModal.hidden = false;
+}
+
+function hideRemoteRequestModal() {
+  state.activeRemoteRequest = null;
+  remoteRequestModal.hidden = true;
+}
+
+async function refreshRemoteRequests() {
+  if (state.remotePollBusy) return;
+  state.remotePollBusy = true;
+  try {
+    const remote = await api("/api/remote/state");
+    const pendingIds = new Set(remote.pending.map((item) => item.id));
+    const newRequest = remote.pending.find((item) => !state.remotePendingIds.has(item.id));
+    state.remotePendingIds = pendingIds;
+
+    if (state.view === "remote") await loadRemoteState(remote);
+
+    if (state.activeRemoteRequest && !pendingIds.has(state.activeRemoteRequest.id)) {
+      hideRemoteRequestModal();
+    }
+
+    if (!state.activeRemoteRequest && newRequest) {
+      showRemoteRequestModal(newRequest);
+    }
+  } catch {
+    // El polling no debe interrumpir el uso de la terminal.
+  } finally {
+    state.remotePollBusy = false;
+  }
+}
+
+async function resolveRemoteRequest(action) {
+  const request = state.activeRemoteRequest;
+  if (!request) return;
+  await api(`/api/remote/pending/${request.id}/${action}`, { method: "POST" });
+  state.remotePendingIds.delete(request.id);
+  hideRemoteRequestModal();
+  if (state.view === "remote") await loadRemoteState();
 }
 
 async function openFolderProject() {
@@ -393,6 +445,14 @@ remotePanel.addEventListener("click", async (event) => {
   if (revoke && confirm("Revocar este telefono?")) await api(`/api/remote/connections/${revoke.dataset.revoke}`, { method: "DELETE" });
   if (accept || reject || revoke) await loadRemoteState();
 });
+
+$("#remoteRequestAccept").addEventListener("click", () => {
+  resolveRemoteRequest("accept").catch((error) => alert(error.message));
+});
+
+$("#remoteRequestReject").addEventListener("click", () => {
+  resolveRemoteRequest("reject").catch((error) => alert(error.message));
+});
 $("#sessionMenuButton").addEventListener("click", (event) => {
   const project = selectedProject();
   const session = selectedSession();
@@ -432,3 +492,5 @@ load().catch((error) => {
 });
 
 ensureTerminal();
+refreshRemoteRequests();
+setInterval(refreshRemoteRequests, 2500);

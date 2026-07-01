@@ -11,6 +11,10 @@ const mobileState = {
 const $ = (selector) => document.querySelector(selector);
 const params = new URLSearchParams(location.search);
 
+function getNativeBridge() {
+  return typeof NativeBridge !== "undefined" ? NativeBridge : null;
+}
+
 function show(view) {
   ["#connectionsView", "#pairView", "#homeView", "#terminalView"].forEach((id) => {
     const el = $(id);
@@ -312,9 +316,11 @@ function showConnectionsManager() {
   if (!list) return;
 
   function render() {
+    const bridge = getNativeBridge();
+    const NativeBridge = bridge || {};
     let conns = [];
-    try { conns = JSON.parse(NativeBridge.getConnections() || "[]"); } catch (e) {}
-    const activeId = NativeBridge.getActiveId();
+    try { conns = JSON.parse(bridge?.getConnections?.() || "[]"); } catch (e) {}
+    const activeId = bridge?.getActiveId?.() || "";
 
     if (conns.length === 0) {
       list.innerHTML = `<div class="conn-empty">
@@ -348,20 +354,24 @@ function showConnectionsManager() {
         if (e.target.closest(".conn-icon-btn")) return;
         const id = card.dataset.id;
         // Siempre cargar la conexion al tocar la card (sea activa o no)
-        NativeBridge.setActive(id);
+        bridge?.setActive?.(id);
       });
     });
     list.querySelectorAll(".conn-icon-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const id = btn.dataset.id;
-        if (btn.dataset.action === "edit") NativeBridge.edit(id);
+        if (btn.dataset.action === "edit") bridge?.edit?.(id);
         else if (btn.dataset.action === "remove") { if (confirm("¿Eliminar?")) NativeBridge.remove(id); }
       });
     });
   }
 
-  $("#connAddButton")?.addEventListener("click", () => NativeBridge.addNew());
+  $("#connAddButton")?.addEventListener("click", () => {
+    const bridge = getNativeBridge();
+    if (bridge?.addNew) bridge.addNew();
+    else $("#pairStatus").textContent = "Agrega la conexion escaneando el QR.";
+  });
   // Usar event delegation para que funcione incluso despues de re-render
   document.addEventListener("click", (e) => {
     if (e.target.closest("#connScanButton")) startQRScanner();
@@ -377,6 +387,11 @@ let qrScanning = false;
 $("#qrCloseButton")?.addEventListener("click", stopQRScanner);
 
 async function startQRScanner() {
+  if (typeof NativeBridge !== "undefined" && NativeBridge.startCamera) {
+    NativeBridge.startCamera();
+    return;
+  }
+
   // Usar input file con capture=environment para abrir la camara nativa de Android
   // Esto funciona en WebView sin necesidad de HTTPS (a diferencia de getUserMedia)
   const input = document.createElement("input");

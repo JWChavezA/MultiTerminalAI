@@ -71,6 +71,19 @@
       </section>
     </main>
     <div id="actionMenu" class="action-menu" hidden></div>
+    <div id="remoteRequestModal" class="modal-backdrop" hidden>
+      <div class="modal">
+        <div>
+          <p class="modal-eyebrow">Solicitud móvil</p>
+          <h2>Permitir conexión</h2>
+          <p id="remoteRequestText"></p>
+        </div>
+        <div class="modal-actions">
+          <button id="remoteRequestReject" class="danger">Rechazar</button>
+          <button id="remoteRequestAccept">Aceptar</button>
+        </div>
+      </div>
+    </div>
 
     <script src="/vendor/@xterm/xterm/lib/xterm.js"></script>
     <script src="/vendor/@xterm/addon-fit/lib/addon-fit.js"></script>

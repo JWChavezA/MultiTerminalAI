@@ -11,3 +11,8 @@ android-mobile/build/
 *.apk
 *.idsig
 *.log
+
+# Test/QA artifacts (local-only, not tracked)
+.commandcode/
+artifacts/
+android-mobile/e2e-screenshots/
